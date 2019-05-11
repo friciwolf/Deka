@@ -8,6 +8,6 @@ Dependencies: plotly, wxPython, csvparser, all of them are available via pip.
 
 # Screenshots
 
-![Alt text](screenshots/s1.jpg?raw=true "Optional Title")
-![Alt text](/screenshots/s2.jpg?raw=true "Optional Title")
-![Alt text](/screenshots/s3.jpg?raw=true "Optional Title")
+![Alt text](/screenshots/s1.png?raw=true "")
+![Alt text](/screenshots/s2.png?raw=true "")
+![Alt text](/screenshots/s3.png?raw=true "")
