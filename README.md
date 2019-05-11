@@ -7,7 +7,7 @@ Primarily developed on MacOS X Mojave (10.14), tested on Linux Mint 18.2 Sonya. 
 Dependencies: plotly (used for the interactive plots), wxPython (for the GUI), which are available via pip.
 
 # Setup
-1. You will need to install [plotly](https://plot.ly/python/getting-started/) and csvparser via:
+1. You will need to install [plotly](https://plot.ly/python/getting-started/) via:
 ```
 pip3 install plotly
 ```
