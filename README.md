@@ -1,6 +1,6 @@
 # Deka
 A small python script helping to get a better insight into the temporary evolution of your DekaBank investments.
-The script does not directly access to your banking account, deriving every information from your monthly investments. These information are stored in .csv files (~Excel sheets) as plain text.
+The script does not directly access to your banking account, rather deriving every information from your monthly investments, which is stored in .csv files (~Excel sheets) as plain text.
 
 Primarily developed on MacOS X Mojave (10.14), tested on Linux Mint 18.2 Sonya
 
