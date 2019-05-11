@@ -4,7 +4,19 @@ The script does not directly access to your banking account, rather deriving eve
 
 Primarily developed on MacOS X Mojave (10.14), tested on Linux Mint 18.2 Sonya
 
-Dependencies: plotly, wxPython, csvparser, all of them are available via pip.
+Dependencies: plotly (used for the interactive plots), wxPython (for the GUI), which are available via pip.
+
+# Setup
+1. You will need to install [plotly](https://plot.ly/python/getting-started/) and csvparser via:
+```
+pip3 install plotly
+```
+2. Next, install [wxpython](https://wiki.wxpython.org/How%20to%20install%20wxPython)
+
+3. Under OS X you can launch the script via
+```
+pythonw deka.py
+```
 
 # Screenshots
 
