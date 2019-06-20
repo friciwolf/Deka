@@ -25,6 +25,7 @@ invested = []
 dividends_invested = []
 dividends_transferred = []
 liquidity = []
+current_holding = []
 
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
@@ -69,7 +70,7 @@ class MyFrame(wx.Frame):
 				else: clr="red"
 				wx.StaticText(panelC,wx.ID_ANY, fullname+" :", (10,(j+1)*40))
 				wx.StaticText(panelC,wx.ID_ANY, "", (250,(j+1)*40)).SetLabelMarkup("<b><span color='"+str(config[i]["color"])+"'>"+"{:.2f}".format(wealth_amount[j][-1])+" </span></b>")
-				wx.StaticText(panelC,wx.ID_ANY, "", (250-5,(j+1)*40+20)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+str(round(wealth_amount[j][-1]-invested[j],2))+" ("+str(round(((wealth_amount[j][-1]-invested[j])/invested[j])*100,2))+" %)</span>")
+				wx.StaticText(panelC,wx.ID_ANY, "", (250-5,(j+1)*40+20)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+"{:.2f}".format(round(wealth_amount[j][-1]-invested[j],2))+" ("+str(round(((wealth_amount[j][-1]-invested[j])/invested[j])*100,2))+" %)</span>")
 				total_inv += invested[j]
 				total += wealth_amount[j][-1]
 			if str(config[i]["type"])=="liq":
@@ -130,20 +131,22 @@ class MyFrame(wx.Frame):
 				if wealth_amount[j][-1]-invested[j]>0: clr="#00cc00"
 				else: clr="red"
 				wx.StaticText(panelC,wx.ID_ANY,"Invested Amount: ",(10,90))
-				wx.StaticText(panelC,wx.ID_ANY,str(invested[j]),(250,90))
+				wx.StaticText(panelC,wx.ID_ANY,"{:.2f}".format(invested[j]),(250,90))
 				wx.StaticText(panelC,wx.ID_ANY,"Value of the Invested Amount\n(w reinvested dividends): ",(10,110))
-				wx.StaticText(panelC,wx.ID_ANY,str(wealth_amount[j][-1]),(250,115))
-				wx.StaticText(panelC,wx.ID_ANY,"",(10,145)).SetLabelMarkup("<span color='blue'>Reinvested dividends:</span>")
-				wx.StaticText(panelC,wx.ID_ANY,str(dividends_invested[j]),(250,145))
-				wx.StaticText(panelC,wx.ID_ANY,"",(10,165)).SetLabelMarkup("<span color='red'>Transferred dividends:</span>")
-				wx.StaticText(panelC,wx.ID_ANY,str(dividends_transferred[j]),(250,165))
-				wx.StaticText(panelC,wx.ID_ANY,"Total gain/loss:",(10,185))
-				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,185)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+str(round(wealth_amount[j][-1]-invested[j],2))+"</span>")
-				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,205)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+str(round(((wealth_amount[j][-1]-invested[j])/invested[j])*100,2))+" % </span>")
-				cb_aut = wx.CheckBox(panelC,500+len(self.checkboxes_auto_ids),"Monthly Automatisation from:",(10,235))
+				wx.StaticText(panelC,wx.ID_ANY,"{:.2f}".format(wealth_amount[j][-1]),(250,115))
+				wx.StaticText(panelC,wx.ID_ANY,"Current Holding: ",(10,145))
+				wx.StaticText(panelC,wx.ID_ANY,str(round(current_holding[j],3)),(250,145))
+				wx.StaticText(panelC,wx.ID_ANY,"",(10,165)).SetLabelMarkup("<span color='blue'>Reinvested dividends:</span>")
+				wx.StaticText(panelC,wx.ID_ANY,"{:.2f}".format(dividends_invested[j]),(250,165))
+				wx.StaticText(panelC,wx.ID_ANY,"",(10,185)).SetLabelMarkup("<span color='red'>Transferred dividends:</span>")
+				wx.StaticText(panelC,wx.ID_ANY,str("{:.2f}".format(dividends_transferred[j])),(250,185))
+				wx.StaticText(panelC,wx.ID_ANY,"Total gain/loss:",(10,205))
+				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,205)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+"{:.2f}".format(round(wealth_amount[j][-1]-invested[j],2))+"</span>")
+				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,225)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+str(round(((wealth_amount[j][-1]-invested[j])/invested[j])*100,2))+" % </span>")
+				cb_aut = wx.CheckBox(panelC,500+len(self.checkboxes_auto_ids),"Monthly Automatisation from:",(10,255))
 				self.checkboxes_auto_ids.append(cb_aut.GetId())
 				self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxAut, cb_aut)
-				dpc = wx.adv.DatePickerCtrl(panelC,600+len(self.DatePicker_ids),wx.DateTime.Today(),(10,255))
+				dpc = wx.adv.DatePickerCtrl(panelC,600+len(self.DatePicker_ids),wx.DateTime.Today(),(10,275))
 				if len(wealth_dates[0])>1:
 					minimumdate = wx.DateTime(int(str(wealth_dates[j][0])[-2:]),int(str(wealth_dates[j][0])[5:7])-1,int(str(wealth_dates[j][0])[:4]))
 					maximumdate = wx.DateTime(int(str(wealth_dates[j][-1])[-2:]),int(str(wealth_dates[j][-1])[5:7])-1,int(str(wealth_dates[j][-1])[:4]))
@@ -159,7 +162,7 @@ class MyFrame(wx.Frame):
 				self.Bind(wx.adv.EVT_DATE_CHANGED, self.OnDateChanged, dpc)
 				self.DatePicker_ids.append(dpc.GetId())
 				self.DatePickers.append(dpc)
-				SpinCtrlDouble_amount = wx.SpinCtrlDouble(panelC,value='25.00',min=25, max=1000, pos=(200,260),id=700+len(self.SpinCtrls),inc=0.01)
+				SpinCtrlDouble_amount = wx.SpinCtrlDouble(panelC,value='25.00',min=25, max=1000, pos=(200,280),id=700+len(self.SpinCtrls),inc=0.01)
 				if date=="": SpinCtrlDouble_amount.Enable(False)
 				if config[i]["aut_amount"]!="": SpinCtrlDouble_amount.SetValue(str(ConvertToFloat(config[i]["aut_amount"])))
 				self.SpinCtrls.append(SpinCtrlDouble_amount)
@@ -581,6 +584,7 @@ def plot():
 						k2-=1
 				values.append(round(pcs_at_t*y2[index],2))
 				investment.append(inv)
+			current_holding.append(pcs_at_t)
 
 			data3 = go.Scatter(
 				x=dates_from_day_1,
