@@ -2,6 +2,7 @@ import plotly
 import plotly.graph_objs as go
 
 import os
+import sys
 import csv
 import time
 import configparser
@@ -17,8 +18,8 @@ import wx.adv
 from wx.lib import masked
 
 config = configparser.ConfigParser()
-config.read("config.conf")
 filepath = os.path.dirname(os.path.abspath(__file__))
+config.read(filepath+"/config.conf")
 wealth_dates = []
 wealth_amount = []
 invested = []
@@ -26,6 +27,10 @@ dividends_invested = []
 dividends_transferred = []
 liquidity = []
 current_holding = []
+
+#Argument settings
+printing_allowed = False
+mode_only_state = False
 
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
@@ -356,7 +361,7 @@ def checkMonthlyAutomatisation(i,name):
 					datebuy=d
 					break
 			if datebuy not in date_b:
-				print("bought of",name,"on",datebuy,"for",config[i]["aut_amount"])
+				print_if_allowed("bought of",name,"on",datebuy,"for",config[i]["aut_amount"])
 				date_b = [datebuy]+date_b
 				amount_b = [str(config[i]["aut_amount"])]+amount_b
 				writeNewCSVData(i,name,date_b,amount_b)
@@ -427,10 +432,13 @@ def parseDekaData(i, name):
 	file.close()
 	with open(filename) as csvfile:
 		reader = csv.DictReader(csvfile, delimiter=";")
-		for row in reader:
-			x.append(str(date(int(row['Datum'][-4:]),int(row['Datum'][3:5]),int(row['Datum'][:2]))))
-			y1.append(ConvertToFloat(row['Ausgabepreis']))
-			y2.append(ConvertToFloat(row['Anteilpreis']))
+		try:
+			for row in reader:
+				x.append(str(date(int(row['Datum'][-4:]),int(row['Datum'][3:5]),int(row['Datum'][:2]))))
+				y1.append(ConvertToFloat(row['Ausgabepreis']))
+				y2.append(ConvertToFloat(row['Anteilpreis']))
+		except KeyError:
+			return parseDekaData(i,name)
 	return x,y1,y2
 
 def unifyData():
@@ -456,7 +464,7 @@ def unifyData():
 	return dates_unified, amount_unified
 
 def plotOverviewGraphs():
-	print("Making Summary plots...")
+	print_if_allowed("Making Summary plots...")
 	(dates_unified, amount_unified) = unifyData()
 	data = []
 	stack_levels = []
@@ -478,7 +486,7 @@ def plotOverviewGraphs():
 
 	layout = dict(title="Overview of total assets")
 	fig = dict(data=data,layout=layout)
-	plotly.offline.plot(fig, filename="html/overview1.html", auto_open=False)
+	if not mode_only_state: plotly.offline.plot(fig, filename="html/overview1.html", auto_open=False)
 
 	layout = dict(
 				autosize=True,
@@ -486,10 +494,10 @@ def plotOverviewGraphs():
 			)
 	trace = go.Pie(labels=pie_labels, values=pie_values, showlegend=False, marker=dict(colors=chart_colors),textinfo='percent')
 	fig = dict(data=[trace], layout=layout)
-	plotly.offline.plot(fig,filename="html/overview2.html", auto_open=False)
+	if not mode_only_state: plotly.offline.plot(fig,filename="html/overview2.html", auto_open=False)
 
 def plot():
-	print("Making",len(config.sections()),"plots...")
+	print_if_allowed("Making",len(config.sections()),"plots...")
 	for i in range(len(config.sections())):
 		name = str(config[str(config.sections()[i])]["name"])
 		fullname = str(config[str(config.sections()[i])]["fullname"])
@@ -497,7 +505,7 @@ def plot():
 			os.mkdir(os.path.dirname(os.path.abspath(__file__))+"/html/")
 		if(os.path.isdir(os.path.dirname(os.path.abspath(__file__))+"/html/"+name))==False:
 			os.mkdir(os.path.dirname(os.path.abspath(__file__))+"/html/"+name)
-		print("Creating Graphs for", fullname+str("..."))
+		print_if_allowed("Creating Graphs for", fullname+str("..."))
 		if str(config[str(config.sections()[i])]["type"])=="deka":
 			x,y1,y2 = parseDekaData(i, name)
 			fill_color = str(config[str(config.sections()[i])]["color"])
@@ -546,7 +554,7 @@ def plot():
 				name = "Price (Sell)",
 				line=(dict(color = fill_color)))
 			fig = dict(data=[data1, data2], layout=layout)
-			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_since_estab.html"), auto_open=False)
+			if not mode_only_state: plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_since_estab.html"), auto_open=False)
 
 			date_b,amount_b,date_d,amount_d = parseInvestementData(config.sections()[i],name,AsDate=True)
 			for j in range(len(date_b)):
@@ -598,7 +606,7 @@ def plot():
 				name = "Invested amount (w/o div)",
 				line=dict(color='#7f7f7f'))
 			fig = dict(data=[data3,data4], layout=layout)
-			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_inv.html"), auto_open=False)
+			if not mode_only_state: plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_inv.html"), auto_open=False)
 
 			data1 = go.Scatter(
 				x=dates_from_day_1,
@@ -611,7 +619,7 @@ def plot():
 				name = "Price (Sell)",
 				line=(dict(color = fill_color)))
 			fig = dict(data=[data1, data2], layout=layout)
-			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
+			if not mode_only_state: plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
 
 			wealth_dates.append(dates_from_day_1)
 			wealth_amount.append(values)
@@ -664,29 +672,66 @@ def plot():
 #				opacity = 0.8,
 				fill='tozeroy')
 			fig = dict(data=[data1], layout=layout)
-			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
+			if not mode_only_state: plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
 
 			wealth_dates.append(x)
 			wealth_amount.append(y)
 			liquidity.append(y[0])
 
+def print_if_allowed(*string):
+	if printing_allowed: print(*string)
+
 
 if __name__ == '__main__':
-	print("Welcome!")
-	app = wx.App()
-	try:
-		plot()
-		plotOverviewGraphs()
-		Frame = MyFrame(None, "Online Mode")
-	except requests.exceptions.ConnectionError:
-		print("Connection Error, starting in offline mode...")
-		for i in config.sections():
-			wealth_dates.append([0])
-			wealth_amount.append([0])
-			invested.append(1)
-			dividends_invested.append([0])
-			dividends_transferred.append([0])
-			liquidity.append(0)
-		Frame = MyFrame(None, "Offline Mode")
-	print("Starting Application...")
-	app.MainLoop()
+	args = sys.argv
+	if ("--help" in args) or ("-h") in args:
+		print("DekaPlotter")
+		print("  Arguments:")
+		print("{:4} {:15} - {}".format("","--msgs or -m","Shows startup progress"))
+		print("{:4} {:15} - {}".format("","--state or -s","Shows data only in terminal"))
+	else:
+		if ("--msgs" in args) or ("-m" in args): printing_allowed = True
+		if ("--state" in args) or ("-s" in args): mode_only_state = True
+		print_if_allowed("Welcome!")
+		if not mode_only_state: app = wx.App()
+		try:
+			plot()
+			plotOverviewGraphs()
+			if not mode_only_state: Frame = MyFrame(None, "Online Mode")
+		except requests.exceptions.ConnectionError:
+			print_if_allowed("Connection Error, starting in offline mode...")
+			for i in config.sections():
+				wealth_dates.append([0])
+				wealth_amount.append([0])
+				invested.append(1)
+				dividends_invested.append([0])
+				dividends_transferred.append([0])
+				current_holding.append(0)
+				liquidity.append(0)
+			if not mode_only_state: Frame = MyFrame(None, "Offline Mode")
+		print_if_allowed("Starting Application...")
+		if not mode_only_state:	app.MainLoop()
+		else:
+			print("="*80)
+			topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}]".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.")
+			print(topbar)
+			print(len(topbar)*"-")
+			total = 0.0
+			total_inv = 0.0
+			for i in range(len(wealth_amount)):
+				inv_type = str(config[str(config.sections()[i])]["type"])
+				fullname = str(config[str(config.sections()[i])]["fullname"])
+				wealth = wealth_amount[i][-1]
+				if inv_type=="deka": 
+					total += wealth
+					total_inv += invested[i]
+					diff_in_percent = ((wealth_amount[i][-1]-invested[i])/invested[i])*100
+					diff_in_percent = ("+" if diff_in_percent>0 else "")+"{:.2f}".format(diff_in_percent)
+					diff = (wealth_amount[i][-1]-invested[i])
+					diff = ("+" if diff>0 else "")+"{:.2f}".format(diff)
+					print("{:35}: {:7} ({:>7} %) ({:>7}) [{:>7.3f}]".format(fullname, wealth, diff_in_percent,diff,current_holding[i]))
+				if inv_type=="liq": print("{:35}: {}".format(fullname, wealth))
+			diff_in_tot = (total-total_inv)
+			diff_in_tot = ("+" if diff_in_tot>0 else "")+"{:.2f}".format(diff_in_tot)
+			print("{:35}: {:7} ({:>7.2f} %) ({:>7})".format("Total", total,100*(total-total_inv)/total_inv,diff_in_tot))
+
