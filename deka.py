@@ -498,6 +498,12 @@ def plotOverviewGraphs():
 
 def plot():
 	print_if_allowed("Making",len(config.sections()),"plots...")
+	if printing_allowed==False and mode_only_state==True:
+			percent = float(0) / len(config.sections())
+			arrow = '-' * int(round(percent * 50)-1) + '>'
+			spaces = ' ' * (50 - len(arrow))
+			sys.stdout.write("\rFetching Data...: [{0}] {1}%".format(arrow + spaces, int(round(percent * 100))))
+			sys.stdout.flush()
 	for i in range(len(config.sections())):
 		name = str(config[str(config.sections()[i])]["name"])
 		fullname = str(config[str(config.sections()[i])]["fullname"])
@@ -629,6 +635,7 @@ def plot():
 			dividends_invested.append(d_inv)
 			dividends_transferred_dates,dividends_transferred_amounts = parseTransferedDividendData(name, AsFloat=True)
 			dividends_transferred.append(sum(dividends_transferred_amounts))
+			
 		else:
 			x,y = parseLiqudityData(name, AsDate=True, AsFloat=True)
 			layout = dict(
@@ -677,6 +684,14 @@ def plot():
 			wealth_dates.append(x)
 			wealth_amount.append(y)
 			liquidity.append(y[0])
+			
+		#updating the status bar...
+		if printing_allowed==False and mode_only_state==True:
+			percent = float(i+1) / len(config.sections())
+			arrow = '-' * int(round(percent * 50)-1) + '>'
+			spaces = ' ' * (50 - len(arrow))
+			sys.stdout.write("\rFetching Data...: [{0}] {1}%".format(arrow + spaces, int(round(percent * 100))))
+			sys.stdout.flush()
 
 def print_if_allowed(*string):
 	if printing_allowed: print(*string)
@@ -712,6 +727,7 @@ if __name__ == '__main__':
 		print_if_allowed("Starting Application...")
 		if not mode_only_state:	app.MainLoop()
 		else:
+			if printing_allowed==False and mode_only_state==True: print("")
 			print("="*80)
 			topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}]".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.")
 			print(topbar)
@@ -733,5 +749,5 @@ if __name__ == '__main__':
 				if inv_type=="liq": print("{:35}: {}".format(fullname, wealth))
 			diff_in_tot = (total-total_inv)
 			diff_in_tot = ("+" if diff_in_tot>0 else "")+"{:.2f}".format(diff_in_tot)
-			print("{:35}: {:7} ({:>7.2f} %) ({:>7})".format("Total", total,100*(total-total_inv)/total_inv,diff_in_tot))
+			print("{:35}: {:7} ({:>7.2f} %) ({:>7})".format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot))
 
