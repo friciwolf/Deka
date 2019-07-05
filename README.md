@@ -25,10 +25,10 @@ function deka {
 	cd -
 	echo -e "\033[2A"
 }
-
+```
 
 4. Under OS X you can launch the script via
-
+```
 pythonw deka.py
 ```
 
