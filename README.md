@@ -17,6 +17,15 @@ pip3 install plotly
 ```
 python deka.py --help
 ```
+You might also want to add the following lines to your .bashrc or .zshrc to lauch the script directly via ```deka```
+```
+function deka {
+	cd /path/to/deka/script
+	pythonw deka.py $@
+	cd -
+	echo -e "\033[2A"
+}
+
 
 4. Under OS X you can launch the script via
 ```
