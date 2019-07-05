@@ -16,7 +16,7 @@ pip3 install plotly
 3. If you want to launch the script in CLI-mode you have to set the terminals font to one of the [Nerd Fonts](https://nerdfonts.com). To see the available commands type
 ```
 python deka.py --help
-
+```
 
 4. Under OS X you can launch the script via
 ```
