@@ -736,7 +736,7 @@ if __name__ == '__main__':
 			print("-"*(len(topbar)+1))
 			total = 0.0
 			total_inv = 0.0
-			total_5dhistory = (len(wealth_amount)+1)*[0] #6-days ago;5 days ago;...;today
+			total_5dhistory = 6*[0] #6-days ago;5 days ago;...;today
 			for i in range(len(wealth_amount)):
 				inv_type = str(config[str(config.sections()[i])]["type"])
 				fullname = str(config[str(config.sections()[i])]["fullname"])
@@ -762,5 +762,5 @@ if __name__ == '__main__':
 			history_tot = ""
 			for i in range(5):
 				history_tot = bash_mode_arrows[str(total_5dhistory[-1-i]>total_5dhistory[-2-i])]+history_tot
-			history_tot += " "+bash_mode_arrows_bold[str(wealth_amount[i][-1]>wealth_amount[i][-6])]
+			history_tot += " "+bash_mode_arrows_bold[str(total_5dhistory[-1]>total_5dhistory[-6])]
 			print(("{:35}: {:7.2f} ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>7.2f} %\033[0;37m) ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>8}\033[0;37m) {:9} {:7}").format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot,"",history_tot))
