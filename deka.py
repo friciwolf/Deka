@@ -75,7 +75,7 @@ class MyFrame(wx.Frame):
 				else: clr="red"
 				wx.StaticText(panelC,wx.ID_ANY, fullname+" :", (10,(j+1)*40))
 				wx.StaticText(panelC,wx.ID_ANY, "", (250,(j+1)*40)).SetLabelMarkup("<b><span color='"+str(config[i]["color"])+"'>"+"{:.2f}".format(wealth_amount[j][-1])+" </span></b>")
-				wx.StaticText(panelC,wx.ID_ANY, "", (250-5,(j+1)*40+20)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+"{:.2f}".format(round(wealth_amount[j][-1]-invested[j],2))+" ("+str(round(((wealth_amount[j][-1]-invested[j])/invested[j])*100,2))+" %)</span>")
+				wx.StaticText(panelC,wx.ID_ANY, "", (250-5,(j+1)*40+20)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+"{:.2f}".format(round(wealth_amount[j][-1]-invested[j],2))+" ("+"{:.2f}".format(round(((wealth_amount[j][-1]-invested[j])/invested[j])*100,2))+" %)</span>")
 				total_inv += invested[j]
 				total += wealth_amount[j][-1]
 			if str(config[i]["type"])=="liq":
@@ -83,7 +83,7 @@ class MyFrame(wx.Frame):
 				wx.StaticText(panelC,wx.ID_ANY,str(liquidity[0]),(250,(j+1)*40))
 		wx.StaticText(panelC,wx.ID_ANY,"Total (w/o Liquidity):", (10,(len(config.sections())+0.5)*40))
 		wx.StaticText(panelC,wx.ID_ANY,"",(250,(len(config.sections())+0.5)*40)).SetLabelMarkup("<b>"+str("{:.3f}".format(total))+"</b>")
-		wx.StaticText(panelC,wx.ID_ANY,"",(250-5,(len(config.sections())+1.5)*40-20)).SetLabelMarkup("<span color='"+("red" if (total-total_inv)<0 else "#00cc00")+"'>"+("+" if (total-total_inv)>0 else "")+"{:.2f}".format(round(total-total_inv,2))+" ("+str(round((total-total_inv)*100/total_inv,2))+" %)"+"</span>")
+		wx.StaticText(panelC,wx.ID_ANY,"",(250-5,(len(config.sections())+1.5)*40-20)).SetLabelMarkup("<span color='"+("red" if (total-total_inv)<0 else "#00cc00")+"'>"+("+" if (total-total_inv)>0 else "")+"{:.2f}".format(round(total-total_inv,2))+" ("+"{:.2f}".format(round((total-total_inv)*100/total_inv,2))+" %)"+"</span>")
 
 		bsizer1 = wx.BoxSizer(wx.VERTICAL)
 		bsizer1.Add(browser2, 2, wx.EXPAND)
@@ -147,7 +147,7 @@ class MyFrame(wx.Frame):
 				wx.StaticText(panelC,wx.ID_ANY,str("{:.2f}".format(dividends_transferred[j])),(250,185))
 				wx.StaticText(panelC,wx.ID_ANY,"Total gain/loss:",(10,205))
 				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,205)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+"{:.2f}".format(round(wealth_amount[j][-1]-invested[j],2))+"</span>")
-				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,225)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+str(round(((wealth_amount[j][-1]-invested[j])/invested[j])*100,2))+" % </span>")
+				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,225)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if wealth_amount[j][-1]-invested[j]>0 else "")+"{:.2f}".format(round(((wealth_amount[j][-1]-invested[j])/invested[j])*100,2))+" % </span>")
 				cb_aut = wx.CheckBox(panelC,500+len(self.checkboxes_auto_ids),"Monthly Automatisation from:",(10,255))
 				self.checkboxes_auto_ids.append(cb_aut.GetId())
 				self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxAut, cb_aut)
@@ -502,7 +502,7 @@ def plot():
 			percent = float(0) / len(config.sections())
 			arrow = '-' * int(round(percent * 50)-1) + '>'
 			spaces = ' ' * (50 - len(arrow))
-			sys.stdout.write("\rFetching Data...: [{0}] {1}%".format(arrow + spaces, int(round(percent * 100))))
+			sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}%".format(arrow +"\033[0m" + spaces, int(round(percent * 100))))
 			sys.stdout.flush()
 	for i in range(len(config.sections())):
 		name = str(config[str(config.sections()[i])]["name"])
@@ -635,7 +635,7 @@ def plot():
 			dividends_invested.append(d_inv)
 			dividends_transferred_dates,dividends_transferred_amounts = parseTransferedDividendData(name, AsFloat=True)
 			dividends_transferred.append(sum(dividends_transferred_amounts))
-			
+
 		else:
 			x,y = parseLiqudityData(name, AsDate=True, AsFloat=True)
 			layout = dict(
@@ -684,29 +684,31 @@ def plot():
 			wealth_dates.append(x)
 			wealth_amount.append(y)
 			liquidity.append(y[0])
-			
+
 		#updating the status bar...
 		if printing_allowed==False and mode_only_state==True:
 			percent = float(i+1) / len(config.sections())
 			arrow = '-' * int(round(percent * 50)-1) + '>'
 			spaces = ' ' * (50 - len(arrow))
-			sys.stdout.write("\rFetching Data...: [{0}] {1}%".format(arrow + spaces, int(round(percent * 100))))
+			sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}%".format(arrow + "\033[0m" + spaces, int(round(percent * 100))))
 			sys.stdout.flush()
 
 def print_if_allowed(*string):
 	if printing_allowed: print(*string)
 
+bash_mode_arrows = {"True":"\033[32m\uf55b\033[37m","False":"\033[31m\uf542\033[37m"} #up, down
+bash_mode_arrows_bold = {"True":"\033[32m\uf062\033[37m","False":"\033[31m\uf063\033[37m"} #up, down
 
 if __name__ == '__main__':
 	args = sys.argv
 	if ("--help" in args) or ("-h") in args:
 		print("DekaPlotter")
 		print("  Arguments:")
-		print("{:4} {:15} - {}".format("","--msgs or -m","Shows startup progress"))
-		print("{:4} {:15} - {}".format("","--state or -s","Shows data only in terminal"))
+		print("{:4} {:25} - {}".format("","--msg, --msgs or -m","Shows startup progress"))
+		print("{:4} {:25} - {}".format("","--status, --state or -s","Shows data only in terminal"))
 	else:
-		if ("--msgs" in args) or ("-m" in args): printing_allowed = True
-		if ("--state" in args) or ("-s" in args): mode_only_state = True
+		if ("--msg" in args) or ("--msgs" in args) or ("-m" in args): printing_allowed = True
+		if ("--status" in args) or ("--state" in args) or ("-s" in args): mode_only_state = True
 		print_if_allowed("Welcome!")
 		if not mode_only_state: app = wx.App()
 		try:
@@ -728,26 +730,37 @@ if __name__ == '__main__':
 		if not mode_only_state:	app.MainLoop()
 		else:
 			if printing_allowed==False and mode_only_state==True: print("")
-			print("="*80)
-			topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}]".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.")
+			topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}] {:8}".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.","Hist(5d)")
+			print("="*(len(topbar)+1))
 			print(topbar)
-			print(len(topbar)*"-")
+			print("-"*(len(topbar)+1))
 			total = 0.0
 			total_inv = 0.0
+			total_5dhistory = (len(wealth_amount)+1)*[0] #6-days ago;5 days ago;...;today
 			for i in range(len(wealth_amount)):
 				inv_type = str(config[str(config.sections()[i])]["type"])
 				fullname = str(config[str(config.sections()[i])]["fullname"])
 				wealth = wealth_amount[i][-1]
-				if inv_type=="deka": 
+				if inv_type=="deka":
 					total += wealth
 					total_inv += invested[i]
 					diff_in_percent = ((wealth_amount[i][-1]-invested[i])/invested[i])*100
 					diff_in_percent = ("+" if diff_in_percent>0 else "")+"{:.2f}".format(diff_in_percent)
 					diff = (wealth_amount[i][-1]-invested[i])
 					diff = ("+" if diff>0 else "")+"{:.2f}".format(diff)
-					print("{:35}: {:7} ({:>7} %) ({:>7}) [{:>7.3f}]".format(fullname, wealth, diff_in_percent,diff,current_holding[i]))
-				if inv_type=="liq": print("{:35}: {}".format(fullname, wealth))
+					history = ""
+					for j in range(6):
+						total_5dhistory[5-j] += wealth_amount[i][-1-j]
+						if j!=5:
+							history = bash_mode_arrows[str(wealth_amount[i][-1-j]>wealth_amount[i][-2-j])]+history
+							if wealth_amount[i][-1-j]==wealth_amount[i][-2-j]: history = "\033[33m\uf553\033[37m"+history[len(bash_mode_arrows[str(wealth_amount[i][-1-j]>wealth_amount[i][-2-j])]):]
+					history += " "+bash_mode_arrows_bold[str(wealth_amount[i][-1]>wealth_amount[i][-6])]
+					print(("{:35}: {:7.2f} ("+("\033[32m" if (wealth_amount[i][-1]-invested[i])>0 else "\033[31m")+"{:>7} %\033[37m) ("+("\033[32m" if (wealth_amount[i][-1]-invested[i])>0 else "\033[31m")+"{:>8}\033[37m) [{:>7.3f}] {:7}").format(fullname, wealth, diff_in_percent,diff,current_holding[i],history))
+				if inv_type=="liq": print("{:35}: {:.2f}".format(fullname, liquidity[0]))
 			diff_in_tot = (total-total_inv)
 			diff_in_tot = ("+" if diff_in_tot>0 else "")+"{:.2f}".format(diff_in_tot)
-			print("{:35}: {:7} ({:>7.2f} %) ({:>7})".format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot))
-
+			history_tot = ""
+			for i in range(5):
+				history_tot = bash_mode_arrows[str(total_5dhistory[-1-i]>total_5dhistory[-2-i])]+history_tot
+			history_tot += " "+bash_mode_arrows_bold[str(wealth_amount[i][-1]>wealth_amount[i][-6])]
+			print(("{:35}: {:7.2f} ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>7.2f} %\033[0;37m) ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>8}\033[0;37m) {:9} {:7}").format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot,"",history_tot))
