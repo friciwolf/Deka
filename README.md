@@ -23,6 +23,11 @@ python deka.py --help
 pythonw deka.py
 ```
 
+# Terminal outputs
+Launching ```pythonw deka.py -s``` one can get a brief up-to-date summary about the investments in the command line without opening the app. The output looks something like the following:
+
+![Alt text](/screenshots/deka_s.png?raw=true "")
+
 # Screenshots
 
 ![Alt text](/screenshots/s1.png?raw=true "")
