@@ -37,6 +37,8 @@ Launching ```pythonw deka.py -s``` one can get a brief up-to-date summary about 
 
 ![Alt text](/screenshots/deka_s.png?raw=true "")
 
+Typing ```pythonw deka.py --hist n``` prints the history of every investment wrt to the last n days. Useful to interpret the arrows in the previous command with which one can combine this one as ```pythonw deka.py -s --hist 7```.
+
 # Screenshots
 
 ![Alt text](/screenshots/s1.png?raw=true "")
