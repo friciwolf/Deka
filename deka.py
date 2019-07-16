@@ -23,6 +23,7 @@ config.read(filepath+"/config.conf")
 wealth_dates = []
 wealth_amount = []
 invested = []
+invested_all = []
 dividends_invested = []
 dividends_transferred = []
 liquidity = []
@@ -31,6 +32,8 @@ current_holding = []
 #Argument settings
 printing_allowed = False
 mode_only_state = False
+mode_CLI = False
+mode_history_days = -999
 
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
@@ -417,19 +420,26 @@ def parseLiqudityData(name,AsDate=False, AsFloat=False):
 			else: amount_b.append(str(row['Amount']))
 	return date_b,amount_b
 
-def parseDekaData(i, name):
-	x,y1,y2 = [],[],[]
+def updateDekaData(i, name):
 	ISIN = str(config[str(config.sections()[i])]["isin"])
 	url = "https://www.deka.de/site/dekade_privatkunden_site/wertentwicklung/3966944/index.html?assetcategory=10&produktkennungswert=null&isin="+ISIN+"&action=exportcsv&exporttype=preisentwicklung&gebuehrenBeruecksichtigen=true&von=0&bis="+str(int(time.time()))+"000"
-	r = requests.get(url)
-	if(os.path.isdir(os.path.dirname(os.path.abspath(__file__))+"/csv/"))==False:
-		os.mkdir(os.path.dirname(os.path.abspath(__file__))+"/csv/")
-	if(os.path.isdir(os.path.dirname(os.path.abspath(__file__))+"/csv/"+name))==False:
-		os.mkdir(os.path.dirname(os.path.abspath(__file__))+"/csv/"+name)
+	try:
+		r = requests.get(url)
+		if(os.path.isdir(os.path.dirname(os.path.abspath(__file__))+"/csv/"))==False:
+			os.mkdir(os.path.dirname(os.path.abspath(__file__))+"/csv/")
+		if(os.path.isdir(os.path.dirname(os.path.abspath(__file__))+"/csv/"+name))==False:
+			os.mkdir(os.path.dirname(os.path.abspath(__file__))+"/csv/"+name)
+		filename = "csv/"+name+"/"+name+".csv"
+		file = open(filename,"w+")
+		file.write(r.text)
+		file.close()
+	except requests.exceptions.ConnectionError:
+		print("Connection error... Updating database for "+name+" failed")
+
+def parseDekaData(i, name, update=False):
+	x,y1,y2 = [],[],[]
+	if update: updateDekaData(i, name)
 	filename = "csv/"+name+"/"+name+".csv"
-	file = open(filename,"w+")
-	file.write(r.text)
-	file.close()
 	with open(filename) as csvfile:
 		reader = csv.DictReader(csvfile, delimiter=";")
 		try:
@@ -438,7 +448,7 @@ def parseDekaData(i, name):
 				y1.append(ConvertToFloat(row['Ausgabepreis']))
 				y2.append(ConvertToFloat(row['Anteilpreis']))
 		except KeyError:
-			return parseDekaData(i,name)
+			return parseDekaData(i,name, True) #This means the Deka server has responded nonsense... Hit it again
 	return x,y1,y2
 
 def unifyData():
@@ -462,6 +472,65 @@ def unifyData():
 				if len(amount_unified[i])==0: amount_unified[i].append(0.0)
 				else: amount_unified[i].append(amount_unified[i][-1])
 	return dates_unified, amount_unified
+
+def readIn_and_update_Data():
+	if printing_allowed==False and mode_CLI==True:
+		percent = float(0) / len(config.sections())
+		arrow = '-' * int(round(percent * 50)-1) + '>'
+		spaces = ' ' * (50 - len(arrow))
+		sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}%".format(arrow +"\033[0m" + spaces, int(round(percent * 100))))
+		sys.stdout.flush()
+	for i in range(len(config.sections())):
+		name = str(config[str(config.sections()[i])]["name"])
+		if str(config[str(config.sections()[i])]["type"])=="deka":
+			x,y1,y2 = parseDekaData(i, name, True)
+			date_b,amount_b,date_d,amount_d = parseInvestementData(config.sections()[i],name,AsDate=True)
+			dates_from_day_1 = x[x.index(date_b[-1]):]
+			
+			pcs_at_t = 0.0
+			values = []
+			investment = []
+			inv = 0.0
+			k1=len(date_b)-1
+			k2=len(date_d)-1
+			for j in range(len(dates_from_day_1)):
+				index = x.index(dates_from_day_1[j])
+				if k1>-1:
+					if dates_from_day_1[j]==date_b[k1]:
+						pcs_at_t+=round(ConvertToFloat(amount_b[k1])*(float(y2[index])/float(y1[index])) /float(y2[index]),3)
+						inv+=ConvertToFloat(amount_b[k1])
+						k1-=1
+				if k2>-1:
+					if dates_from_day_1[j]==date_d[k2]:
+						pcs_at_t+=round(ConvertToFloat(amount_d[k2])/y2[index],3)
+						k2-=1
+				values.append(round(pcs_at_t*y2[index],2))
+				investment.append(inv)
+			current_holding.append(pcs_at_t)
+			wealth_dates.append(dates_from_day_1)
+			wealth_amount.append(values)
+			invested.append(investment[-1])
+			invested_all.append(investment)
+			d_inv = 0.0
+			for s in amount_d: d_inv+=ConvertToFloat(s)
+			dividends_invested.append(d_inv)
+			dividends_transferred_dates,dividends_transferred_amounts = parseTransferedDividendData(name, AsFloat=True)
+			dividends_transferred.append(sum(dividends_transferred_amounts))
+		else:
+			x,y = parseLiqudityData(name, AsDate=True, AsFloat=True)
+			wealth_dates.append(x)
+			wealth_amount.append(y)
+			liquidity.append(y[0])
+		#updating the status bar...
+		if printing_allowed==False and mode_CLI==True:
+			percent = float(i+1) / len(config.sections())
+			arrow = '-' * int(round(percent * 50)-1) + '>'
+			spaces = ' ' * (50 - len(arrow))
+			sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}%".format(arrow + "\033[0m" + spaces, int(round(percent * 100))))
+			sys.stdout.flush()
+
+
+
 
 def plotOverviewGraphs():
 	print_if_allowed("Making Summary plots...")
@@ -498,12 +567,6 @@ def plotOverviewGraphs():
 
 def plot():
 	print_if_allowed("Making",len(config.sections()),"plots...")
-	if printing_allowed==False and mode_only_state==True:
-			percent = float(0) / len(config.sections())
-			arrow = '-' * int(round(percent * 50)-1) + '>'
-			spaces = ' ' * (50 - len(arrow))
-			sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}%".format(arrow +"\033[0m" + spaces, int(round(percent * 100))))
-			sys.stdout.flush()
 	for i in range(len(config.sections())):
 		name = str(config[str(config.sections()[i])]["name"])
 		fullname = str(config[str(config.sections()[i])]["fullname"])
@@ -514,6 +577,7 @@ def plot():
 		print_if_allowed("Creating Graphs for", fullname+str("..."))
 		if str(config[str(config.sections()[i])]["type"])=="deka":
 			x,y1,y2 = parseDekaData(i, name)
+			date_b,amount_b,date_d,amount_d = parseInvestementData(config.sections()[i],name,AsDate=True)
 			fill_color = str(config[str(config.sections()[i])]["color"])
 			layout = dict(
 				title=fullname,
@@ -560,81 +624,34 @@ def plot():
 				name = "Price (Sell)",
 				line=(dict(color = fill_color)))
 			fig = dict(data=[data1, data2], layout=layout)
-			if not mode_only_state: plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_since_estab.html"), auto_open=False)
-
-			date_b,amount_b,date_d,amount_d = parseInvestementData(config.sections()[i],name,AsDate=True)
-			for j in range(len(date_b)):
-				if (date_b[j] in x)==False:
-					print("Error searching for " , date_b[j], "in",name)
-			for j in range(len(date_d)):
-				if (date_d[j] in x)==False:
-					print("Error searching for " , date_d[j], "in",name)
-			"""For debugging reasons:
-			pcs = 0.0
-			for j in range(len(date_b)):
-				index_date = x.index(date_b[j])
-				pcs+=round(ConvertToFloat(amount_b[j])*(float(y2[index_date])/float(y1[index_date]))/float(y2[index_date]),3)
-			for j in range(len(date_d)):
-				index_date = x.index(date_d[j])
-				pcs+=round(ConvertToFloat(amount_d[j])/y2[index_date],3)
-			"""
-			dates_from_day_1 = x[x.index(date_b[-1]):]
-			pcs_at_t = 0.0
-			values = []
-			investment = []
-			inv = 0.0
-			k1=len(date_b)-1
-			k2=len(date_d)-1
-			for j in range(len(dates_from_day_1)):
-				index = x.index(dates_from_day_1[j])
-				if k1>-1:
-					if dates_from_day_1[j]==date_b[k1]:
-						pcs_at_t+=round(ConvertToFloat(amount_b[k1])*(float(y2[index])/float(y1[index])) /float(y2[index]),3)
-						inv+=ConvertToFloat(amount_b[k1])
-						k1-=1
-				if k2>-1:
-					if dates_from_day_1[j]==date_d[k2]:
-						pcs_at_t+=round(ConvertToFloat(amount_d[k2])/y2[index],3)
-						k2-=1
-				values.append(round(pcs_at_t*y2[index],2))
-				investment.append(inv)
-			current_holding.append(pcs_at_t)
+			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_since_estab.html"), auto_open=False)
 
 			data3 = go.Scatter(
-				x=dates_from_day_1,
-				y=values,
+				x=wealth_dates[i],
+				y=wealth_amount[i],
 				name = "Investment (w div)",
 				line=(dict(color = fill_color)),
 				fill='tozeroy')
 			data4 = go.Scatter(
-				x=dates_from_day_1,
-				y=investment,
+				x=wealth_dates[i],
+				y=invested_all[i],
 				name = "Invested amount (w/o div)",
 				line=dict(color='#7f7f7f'))
 			fig = dict(data=[data3,data4], layout=layout)
-			if not mode_only_state: plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_inv.html"), auto_open=False)
+			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_inv.html"), auto_open=False)
 
 			data1 = go.Scatter(
-				x=dates_from_day_1,
+				x=wealth_dates[i],
 				y=y1[x.index(date_b[-1]):],
 				name = "Price (Buy)",
 				line=dict(color='#7f7f7f'))
 			data2 = go.Scatter(
-				x=dates_from_day_1,
+				x=wealth_dates[i],
 				y=y2[x.index(date_b[-1]):],
 				name = "Price (Sell)",
 				line=(dict(color = fill_color)))
 			fig = dict(data=[data1, data2], layout=layout)
-			if not mode_only_state: plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
-
-			wealth_dates.append(dates_from_day_1)
-			wealth_amount.append(values)
-			invested.append(investment[-1])
-			d_inv = 0.0
-			for s in amount_d:d_inv+=ConvertToFloat(s)
-			dividends_invested.append(d_inv)
-			dividends_transferred_dates,dividends_transferred_amounts = parseTransferedDividendData(name, AsFloat=True)
-			dividends_transferred.append(sum(dividends_transferred_amounts))
+			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
 
 		else:
 			x,y = parseLiqudityData(name, AsDate=True, AsFloat=True)
@@ -679,19 +696,7 @@ def plot():
 #				opacity = 0.8,
 				fill='tozeroy')
 			fig = dict(data=[data1], layout=layout)
-			if not mode_only_state: plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
-
-			wealth_dates.append(x)
-			wealth_amount.append(y)
-			liquidity.append(y[0])
-
-		#updating the status bar...
-		if printing_allowed==False and mode_only_state==True:
-			percent = float(i+1) / len(config.sections())
-			arrow = '-' * int(round(percent * 50)-1) + '>'
-			spaces = ' ' * (50 - len(arrow))
-			sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}%".format(arrow + "\033[0m" + spaces, int(round(percent * 100))))
-			sys.stdout.flush()
+			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
 
 def print_if_allowed(*string):
 	if printing_allowed: print(*string)
@@ -706,15 +711,34 @@ if __name__ == '__main__':
 		print("  Arguments:")
 		print("{:4} {:25} - {}".format("","--msg, --msgs or -m","Shows startup progress"))
 		print("{:4} {:25} - {}".format("","--status, --state or -s","Shows data only in terminal"))
+		print("{:4} {:25} - {}".format("","--hist n", "Shows investement history of the past n (def: 10) days"))
+
 	else:
 		if ("--msg" in args) or ("--msgs" in args) or ("-m" in args): printing_allowed = True
-		if ("--status" in args) or ("--state" in args) or ("-s" in args): mode_only_state = True
+		if ("--status" in args) or ("--state" in args) or ("-s" in args):
+			mode_only_state = True
+			mode_CLI = True
+		if "--hist" in args:
+			mode_CLI = True
+			if args.index("--hist")+1<len(args):
+				try:
+					mode_history_days = int(args[args.index("--hist")+1])
+				except ValueError:
+					print("Warning: could not convert",args[args.index("--hist")+1],"to int; default: 10")
+					mode_history_days = 10
+				if mode_history_days <= 0:
+					print("Warning: ",mode_history_days,"is smaller then 0; returning to default: 10")
+					mode_history_days = 10
+			else:
+				mode_history_days = 10
 		print_if_allowed("Welcome!")
-		if not mode_only_state: app = wx.App()
+		readIn_and_update_Data()
 		try:
-			plot()
-			plotOverviewGraphs()
-			if not mode_only_state: Frame = MyFrame(None, "Online Mode")
+			if not mode_CLI:
+				app = wx.App()
+				plot()
+				plotOverviewGraphs()
+				Frame = MyFrame(None, "Online Mode")
 		except requests.exceptions.ConnectionError:
 			print_if_allowed("Connection Error, starting in offline mode...")
 			for i in config.sections():
@@ -725,42 +749,59 @@ if __name__ == '__main__':
 				dividends_transferred.append([0])
 				current_holding.append(0)
 				liquidity.append(0)
-			if not mode_only_state: Frame = MyFrame(None, "Offline Mode")
+			if not mode_CLI: Frame = MyFrame(None, "Offline Mode")
 		print_if_allowed("Starting Application...")
-		if not mode_only_state:	app.MainLoop()
+		if not mode_CLI: app.MainLoop()
 		else:
-			if printing_allowed==False and mode_only_state==True: print("")
-			topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}] {:8}".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.","Hist(5d)")
-			print("="*(len(topbar)+1))
-			print(topbar)
-			print("-"*(len(topbar)+1))
-			total = 0.0
-			total_inv = 0.0
-			total_5dhistory = 6*[0] #6-days ago;5 days ago;...;today
-			for i in range(len(wealth_amount)):
-				inv_type = str(config[str(config.sections()[i])]["type"])
-				fullname = str(config[str(config.sections()[i])]["fullname"])
-				wealth = wealth_amount[i][-1]
-				if inv_type=="deka":
-					total += wealth
-					total_inv += invested[i]
-					diff_in_percent = ((wealth_amount[i][-1]-invested[i])/invested[i])*100
-					diff_in_percent = ("+" if diff_in_percent>0 else "")+"{:.2f}".format(diff_in_percent)
-					diff = (wealth_amount[i][-1]-invested[i])
-					diff = ("+" if diff>0 else "")+"{:.2f}".format(diff)
-					history = ""
-					for j in range(6):
-						total_5dhistory[5-j] += wealth_amount[i][-1-j]
-						if j!=5:
-							history = bash_mode_arrows[str(wealth_amount[i][-1-j]>wealth_amount[i][-2-j])]+history
-							if wealth_amount[i][-1-j]==wealth_amount[i][-2-j]: history = "\033[33m\uf553\033[37m"+history[len(bash_mode_arrows[str(wealth_amount[i][-1-j]>wealth_amount[i][-2-j])]):]
-					history += " "+bash_mode_arrows_bold[str(wealth_amount[i][-1]>wealth_amount[i][-6])]
-					print(("{:35}: {:7.2f} ("+("\033[32m" if (wealth_amount[i][-1]-invested[i])>0 else "\033[31m")+"{:>7} %\033[37m) ("+("\033[32m" if (wealth_amount[i][-1]-invested[i])>0 else "\033[31m")+"{:>8}\033[37m) [{:>7.3f}] {:7}").format(fullname, wealth, diff_in_percent,diff,current_holding[i],history))
-				if inv_type=="liq": print("{:35}: {:.2f}".format(fullname, liquidity[0]))
-			diff_in_tot = (total-total_inv)
-			diff_in_tot = ("+" if diff_in_tot>0 else "")+"{:.2f}".format(diff_in_tot)
-			history_tot = ""
-			for i in range(5):
-				history_tot = bash_mode_arrows[str(total_5dhistory[-1-i]>total_5dhistory[-2-i])]+history_tot
-			history_tot += " "+bash_mode_arrows_bold[str(total_5dhistory[-1]>total_5dhistory[-6])]
-			print(("{:35}: {:7.2f} ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>7.2f} %\033[0;37m) ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>8}\033[0;37m) {:9} {:7}").format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot,"",history_tot))
+			if printing_allowed==False and mode_CLI==True: print("")
+			if mode_only_state:
+				topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}] {:8}".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.","Hist(5d)")
+				print("="*(len(topbar)+1))
+				print(topbar)
+				print("-"*(len(topbar)+1))
+				total = 0.0
+				total_inv = 0.0
+				total_5dhistory = 6*[0] #6-days ago;5 days ago;...;today
+				for i in range(len(wealth_amount)):
+					inv_type = str(config[str(config.sections()[i])]["type"])
+					fullname = str(config[str(config.sections()[i])]["fullname"])
+					wealth = wealth_amount[i][-1]
+					if inv_type=="deka":
+						total += wealth
+						total_inv += invested[i]
+						diff_in_percent = ((wealth_amount[i][-1]-invested[i])/invested[i])*100
+						diff_in_percent = ("+" if diff_in_percent>0 else "")+"{:.2f}".format(diff_in_percent)
+						diff = (wealth_amount[i][-1]-invested[i])
+						diff = ("+" if diff>0 else "")+"{:.2f}".format(diff)
+						history = ""
+						for j in range(6):
+							total_5dhistory[5-j] += wealth_amount[i][-1-j]
+							if j!=5:
+								history = bash_mode_arrows[str(wealth_amount[i][-1-j]>wealth_amount[i][-2-j])]+history
+								if wealth_amount[i][-1-j]==wealth_amount[i][-2-j]: history = "\033[33m\uf553\033[37m"+history[len(bash_mode_arrows[str(wealth_amount[i][-1-j]>wealth_amount[i][-2-j])]):]
+						history += " "+bash_mode_arrows_bold[str(wealth_amount[i][-1]>wealth_amount[i][-6])]
+						print(("{:35}: {:7.2f} ("+("\033[32m" if (wealth_amount[i][-1]-invested[i])>0 else "\033[31m")+"{:>7} %\033[37m) ("+("\033[32m" if (wealth_amount[i][-1]-invested[i])>0 else "\033[31m")+"{:>8}\033[37m) [{:>7.3f}] {:7}").format(fullname, wealth, diff_in_percent,diff,current_holding[i],history))
+					if inv_type=="liq": print("{:35}: {:.2f}".format(fullname, liquidity[0]))
+				diff_in_tot = (total-total_inv)
+				diff_in_tot = ("+" if diff_in_tot>0 else "")+"{:.2f}".format(diff_in_tot)
+				history_tot = ""
+				for i in range(5):
+					history_tot = bash_mode_arrows[str(total_5dhistory[-1-i]>total_5dhistory[-2-i])]+history_tot
+				history_tot += " "+bash_mode_arrows_bold[str(total_5dhistory[-1]>total_5dhistory[-6])]
+				print(("{:35}: {:7.2f} ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>7.2f} %\033[0;37m) ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>8}\033[0;37m) {:9} {:7}").format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot,"",history_tot))
+			
+			if mode_history_days>0:
+				ncols = len(wealth_amount)
+				names = []
+				for j in range(len(wealth_amount)-1): names.append(str(config[str(config.sections()[j])]["name"]))
+				topbar2 = ("{:10} "+(ncols-1)*"{:>10} ").format("Dates",*names)
+				if mode_only_state:
+					print("="*(len(topbar)+1))
+				else:
+					print("="*(len(topbar2)+1))
+				print(topbar2)
+				print("-"*(len(topbar2)+1))
+				for i in range(mode_history_days):
+					values = []
+					for j in range(ncols-1): values.append(wealth_amount[j][-i-1])
+					print(("{:10} "+(ncols-1)*"{:>10.2f} ").format(wealth_dates[0][-i-1],*values))
