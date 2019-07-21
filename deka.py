@@ -35,6 +35,9 @@ mode_only_state = False
 mode_CLI = False
 mode_history_days = -999
 
+#Error printouts:
+error_connection_deka_server = []
+
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
 		wx.Frame.__init__(self, parent, title=title, size=(1040,600))
@@ -434,7 +437,7 @@ def updateDekaData(i, name):
 		file.write(r.text)
 		file.close()
 	except requests.exceptions.ConnectionError:
-		print("Connection error... Updating database for "+name+" failed")
+		error_connection_deka_server.append(("Connection error... Updating database for "+name+" failed"))
 
 def parseDekaData(i, name, update=False):
 	x,y1,y2 = [],[],[]
@@ -448,7 +451,7 @@ def parseDekaData(i, name, update=False):
 				y1.append(ConvertToFloat(row['Ausgabepreis']))
 				y2.append(ConvertToFloat(row['Anteilpreis']))
 		except KeyError:
-			return parseDekaData(i,name, True) #This means the Deka server has responded nonsense... Hit it again
+			return parseDekaData(i,name, True) #This means the Deka server has returned nonsense... Hit it again
 	return x,y1,y2
 
 def unifyData():
@@ -474,7 +477,7 @@ def unifyData():
 	return dates_unified, amount_unified
 
 def readIn_and_update_Data():
-	if printing_allowed==False and mode_CLI==True:
+	if printing_allowed==True or mode_CLI==True:
 		percent = float(0) / len(config.sections())
 		arrow = '-' * int(round(percent * 50)-1) + '>'
 		spaces = ' ' * (50 - len(arrow))
@@ -522,13 +525,16 @@ def readIn_and_update_Data():
 			wealth_amount.append(y)
 			liquidity.append(y[0])
 		#updating the status bar...
-		if printing_allowed==False and mode_CLI==True:
+		if printing_allowed==True or mode_CLI==True:
 			percent = float(i+1) / len(config.sections())
 			arrow = '-' * int(round(percent * 50)-1) + '>'
 			spaces = ' ' * (50 - len(arrow))
 			sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}%".format(arrow + "\033[0m" + spaces, int(round(percent * 100))))
 			sys.stdout.flush()
-
+		if i==max(range(len(config.sections()))):
+			print("") #ensuring new printouts are written in new lines...
+			for s in error_connection_deka_server:
+				print(s)
 
 
 
@@ -724,7 +730,7 @@ if __name__ == '__main__':
 				try:
 					mode_history_days = int(args[args.index("--hist")+1])
 				except ValueError:
-					print("Warning: could not convert",args[args.index("--hist")+1],"to int; default: 10")
+					if args[args.index("--hist")+1][0]!="-": print("Warning: could not convert",args[args.index("--hist")+1],"to int; default: 10")
 					mode_history_days = 10
 				if mode_history_days <= 0:
 					print("Warning: ",mode_history_days,"is smaller then 0; returning to default: 10")
@@ -741,7 +747,7 @@ if __name__ == '__main__':
 				Frame = MyFrame(None, "Online Mode")
 		except requests.exceptions.ConnectionError:
 			print_if_allowed("Connection Error, starting in offline mode...")
-			for i in config.sections():
+			"""for i in config.sections():
 				wealth_dates.append([0])
 				wealth_amount.append([0])
 				invested.append(1)
@@ -749,11 +755,12 @@ if __name__ == '__main__':
 				dividends_transferred.append([0])
 				current_holding.append(0)
 				liquidity.append(0)
+			"""
 			if not mode_CLI: Frame = MyFrame(None, "Offline Mode")
-		print_if_allowed("Starting Application...")
-		if not mode_CLI: app.MainLoop()
+		if not mode_CLI:
+			print_if_allowed("Starting Application...")
+			app.MainLoop()
 		else:
-			if printing_allowed==False and mode_CLI==True: print("")
 			if mode_only_state:
 				topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}] {:8}".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.","Hist(5d)")
 				print("="*(len(topbar)+1))
