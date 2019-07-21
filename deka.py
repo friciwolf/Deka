@@ -3,8 +3,16 @@ import requests
 
 import globals
 
-bash_mode_arrows = {"True":"\033[32m\uf55b\033[37m","False":"\033[31m\uf542\033[37m"} #up, down
-bash_mode_arrows_bold = {"True":"\033[32m\uf062\033[37m","False":"\033[31m\uf063\033[37m"} #up, down
+bash_terminal_font_patched = False #if patched fonts are used, set True; otherwise only standard Unicode characters will be used
+
+if bash_terminal_font_patched:
+	bash_mode_arrows = {"True":"\033[32m\uf55b\033[37m","False":"\033[31m\uf542\033[37m"} #up, down
+	bash_mode_arrows_bold = {"True":"\033[32m\uf062\033[37m","False":"\033[31m\uf063\033[37m"} #up, down
+	bash_mode_arrows_stagnation = "\uf553"
+else:
+	bash_mode_arrows = {"True":"\033[32m\u2197\033[37m","False":"\033[31m\u2198\033[37m"} #up, down
+	bash_mode_arrows_bold = {"True":"\033[32m\u21e7\033[37m","False":"\033[31m\u21e9\033[37m"} #up, down
+	bash_mode_arrows_stagnation = "\u2192"
 
 if __name__ == '__main__':
 	args = sys.argv
@@ -69,7 +77,7 @@ if __name__ == '__main__':
 							total_5dhistory[5-j] += globals.wealth_amount[i][-1-j]
 							if j!=5:
 								history = bash_mode_arrows[str(globals.wealth_amount[i][-1-j]>globals.wealth_amount[i][-2-j])]+history
-								if globals.wealth_amount[i][-1-j]==globals.wealth_amount[i][-2-j]: history = "\033[33m\uf553\033[37m"+history[len(bash_mode_arrows[str(globals.wealth_amount[i][-1-j]>globals.wealth_amount[i][-2-j])]):]
+								if globals.wealth_amount[i][-1-j]==globals.wealth_amount[i][-2-j]: history = "\033[33m"+bash_mode_arrows_stagnation+"\033[37m"+history[len(bash_mode_arrows[str(globals.wealth_amount[i][-1-j]>globals.wealth_amount[i][-2-j])]):]
 						history += " "+bash_mode_arrows_bold[str(globals.wealth_amount[i][-1]>globals.wealth_amount[i][-6])]
 						print(("{:35}: {:7.2f} ("+("\033[32m" if (globals.wealth_amount[i][-1]-globals.invested[i])>0 else "\033[31m")+"{:>7} %\033[37m) ("+("\033[32m" if (globals.wealth_amount[i][-1]-globals.invested[i])>0 else "\033[31m")+"{:>8}\033[37m) [{:>7.3f}] {:7}").format(fullname, wealth, diff_in_percent,diff,globals.current_holding[i],history))
 					if inv_type=="liq": print("{:35}: {:.2f}".format(fullname, globals.liquidity[0]))
