@@ -99,7 +99,7 @@ if __name__ == '__main__':
 					headline.append("Price")
 					x,p_buy,p_sell = globals.parseDekaData(j,name) #reading in data...
 					prices.append(p_sell[-globals.mode_history_days:])
-				topbar2 = ("{:10} "+int(ncols*0.5-1)*"{:^8} {:^8}").format("Dates",*headline)
+				topbar2 = ("{:10}"+int(ncols*0.5-1)*" | {:^8}  {:<6}").format("Dates",*headline)
 				if globals.mode_only_state:
 					print("="*(len(topbar)+1))
 				else:
@@ -113,4 +113,4 @@ if __name__ == '__main__':
 							values.append(prices[int((j-1)*0.5)][-i-1])
 						else:
 							values.append(globals.wealth_amount[int(j/2)][-i-1])
-					print(("{:10} "+int(ncols*0.5-1)*"{:>8.2f} {:>8.2f}").format(globals.wealth_dates[0][-i-1],*values))
+					print(("{:10}"+int(ncols*0.5-1)*" | {:>8.2f}  {:>6.2f}").format(globals.wealth_dates[0][-i-1],*values))
