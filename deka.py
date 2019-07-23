@@ -3,7 +3,7 @@ import requests
 
 import globals
 
-bash_terminal_font_patched = False #if patched fonts are used, set True; otherwise only standard Unicode characters will be used
+bash_terminal_font_patched = True #if patched fonts are used, set True; otherwise only standard Unicode characters will be used
 
 if bash_terminal_font_patched:
 	bash_mode_arrows = {"True":"\033[32m\uf55b\033[37m","False":"\033[31m\uf542\033[37m"} #up, down
@@ -90,10 +90,16 @@ if __name__ == '__main__':
 				print(("{:35}: {:7.2f} ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>7.2f} %\033[0;37m) ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>8}\033[0;37m) {:9} {:7}").format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot,"",history_tot))
 
 			if globals.mode_history_days>0:
-				ncols = len(globals.wealth_amount)
-				names = []
-				for j in range(len(globals.wealth_amount)-1): names.append(str(globals.config[str(globals.config.sections()[j])]["name"]))
-				topbar2 = ("{:10} "+(ncols-1)*"{:>10} ").format("Dates",*names)
+				ncols = len(globals.wealth_amount)*2
+				headline = []
+				prices = []
+				for j in range(len(globals.wealth_amount)-1):
+					name = str(globals.config[str(globals.config.sections()[j])]["name"])
+					headline.append(name)
+					headline.append("Price")
+					x,p_buy,p_sell = globals.parseDekaData(j,name) #reading in data...
+					prices.append(p_sell[-globals.mode_history_days:])
+				topbar2 = ("{:10} "+int(ncols*0.5-1)*"{:^8} {:^8}").format("Dates",*headline)
 				if globals.mode_only_state:
 					print("="*(len(topbar)+1))
 				else:
@@ -102,5 +108,9 @@ if __name__ == '__main__':
 				print("-"*(len(topbar2)+1))
 				for i in range(globals.mode_history_days):
 					values = []
-					for j in range(ncols-1): values.append(globals.wealth_amount[j][-i-1])
-					print(("{:10} "+(ncols-1)*"{:>10.2f} ").format(globals.wealth_dates[0][-i-1],*values))
+					for j in range(ncols-1):
+						if j%2 == 1:
+							values.append(prices[int((j-1)*0.5)][-i-1])
+						else:
+							values.append(globals.wealth_amount[int(j/2)][-i-1])
+					print(("{:10} "+int(ncols*0.5-1)*"{:>8.2f} {:>8.2f}").format(globals.wealth_dates[0][-i-1],*values))
