@@ -154,6 +154,7 @@ def parseLiqudityData(name,AsDate=False, AsFloat=False):
 
 def updateDekaData(i, name):
 	ISIN = str(config[str(config.sections()[i])]["isin"])
+	fullname = str(config[str(config.sections()[i])]["fullname"])
 	url = "https://www.deka.de/site/dekade_privatkunden_site/wertentwicklung/3966944/index.html?assetcategory=10&produktkennungswert=null&isin="+ISIN+"&action=exportcsv&exporttype=preisentwicklung&gebuehrenBeruecksichtigen=true&von=0&bis="+str(int(time.time()))+"000"
 	try:
 		r = requests.get(url)
@@ -166,7 +167,7 @@ def updateDekaData(i, name):
 		file.write(r.text)
 		file.close()
 	except requests.exceptions.ConnectionError:
-		error_connection_deka_server.append(("Connection error... Updating database for "+name+" failed"))
+		error_connection_deka_server.append(("Connection error... Updating database for "+fullname+" failed"))
 
 def parseDekaData(i, name, update=False):
 	x,y1,y2 = [],[],[]

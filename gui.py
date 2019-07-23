@@ -2,14 +2,6 @@ import plotly
 import plotly.graph_objs as go
 
 import os
-import sys
-import csv
-import time
-import configparser
-import requests
-
-from datetime import date
-import datetime
 
 import wx
 import wx.html2
@@ -18,8 +10,6 @@ import wx.adv
 from wx.lib import masked
 
 import globals
-
-app = wx.App()
 
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
@@ -264,7 +254,7 @@ class MyFrame(wx.Frame):
 		if event.IsChecked():
 			value = self.DatePickers[j].GetValue()
 			globals.config[globals.config.sections()[j]]["aut"] = ("0" if len(str(value.day))==1 else "")+str(value.day)+"."+("0" if len(str(int(value.month)+1))==1 else "")+str(int(value.month)+1)+"."+str(value.year)
-			globals.config[globals.config.sections()[j]]["aut_amount"] = ConvertAmountToWritable(self.SpinCtrls[j].GetValue())
+			globals.config[globals.config.sections()[j]]["aut_amount"] = globals.ConvertAmountToWritable(self.SpinCtrls[j].GetValue())
 		else:
 			globals.config[globals.config.sections()[j]]["aut"] = ""
 			globals.config[globals.config.sections()[j]]["aut_amount"] = ""
@@ -280,7 +270,7 @@ class MyFrame(wx.Frame):
 	def OnSpinCtrl(self, event):
 		j = int(str(event.GetId())[-1])
 		value = self.SpinCtrls[j].GetValue()
-		globals.config[globals.config.sections()[j]]["aut_amount"] = ConvertAmountToWritable(value)
+		globals.config[globals.config.sections()[j]]["aut_amount"] = globals.ConvertAmountToWritable(value)
 		globals.config.write(open("globals.config.conf","w"))
 
 def plotOverviewGraphs():
@@ -449,11 +439,13 @@ def plot():
 			fig = dict(data=[data1], layout=layout)
 			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
 
-def gui_init(title="Online Mode"):
-	if title == "Online Mode":
+def gui_make_plots():
+	if len(globals.error_connection_deka_server)==0:
 		plot()
 		plotOverviewGraphs()
-	Frame = MyFrame(None, title)
 
-def gui_main_loop():
+
+def gui_main_loop(title="Online Mode"):
+	app = wx.App()
+	Frame = MyFrame(None, title)
 	app.MainLoop()

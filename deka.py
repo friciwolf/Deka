@@ -42,16 +42,18 @@ if __name__ == '__main__':
 				globals.mode_history_days = 10
 		globals.print_if_allowed("Welcome!")
 		globals.readIn_and_update_Data()
+		frame_title = "Online Mode"
 		try:
 			if not globals.mode_CLI:
 				import gui
-				gui.gui_init("Online Mode")
+				gui.gui_make_plots()
 		except requests.exceptions.ConnectionError:
 			globals.print_if_allowed("Connection Error, starting in offline mode...")
-			if not globals.mode_CLI: gui_init("Offline Mode")
+			if not globals.mode_CLI:
+				frame_title = "Offline Mode"
 		if not globals.mode_CLI:
 			globals.print_if_allowed("Starting Application...")
-			gui.gui_main_loop()
+			gui.gui_main_loop(frame_title)
 		else:
 			if globals.mode_only_state:
 				topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}] {:8}".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.","Hist(5d)")
