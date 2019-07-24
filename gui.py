@@ -445,7 +445,7 @@ def gui_make_plots():
 		plotOverviewGraphs()
 
 
-def gui_main_loop(title="Online Mode"):
+def gui_main_loop(title):
 	app = wx.App()
 	Frame = MyFrame(None, title)
 	app.MainLoop()

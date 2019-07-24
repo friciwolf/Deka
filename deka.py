@@ -42,18 +42,11 @@ if __name__ == '__main__':
 				globals.mode_history_days = 10
 		globals.print_if_allowed("Welcome!")
 		globals.readIn_and_update_Data()
-		frame_title = "Online Mode"
-		try:
-			if not globals.mode_CLI:
-				import gui
-				gui.gui_make_plots()
-		except requests.exceptions.ConnectionError:
-			globals.print_if_allowed("Connection Error, starting in offline mode...")
-			if not globals.mode_CLI:
-				frame_title = "Offline Mode"
 		if not globals.mode_CLI:
+			import gui
+			gui.gui_make_plots()
 			globals.print_if_allowed("Starting Application...")
-			gui.gui_main_loop(frame_title)
+			gui.gui_main_loop("Online Mode" if len(globals.error_connection_deka_server)==0 else "Offline Mode")
 		else:
 			if globals.mode_only_state:
 				topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}] {:8}".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.","Hist(5d)")
@@ -92,16 +85,18 @@ if __name__ == '__main__':
 				print(("{:35}: {:7.2f} ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>7.2f} %\033[0;37m) ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>8}\033[0;37m) {:9} {:7}").format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot,"",history_tot))
 
 			if globals.mode_history_days>0:
-				ncols = len(globals.wealth_amount)*2
+				nb_products = len(globals.wealth_amount)
+				for j in range(nb_products): #removing liquidity and co.
+					if str(globals.config[str(globals.config.sections()[j])]["type"])!="deka": nb_products-=1
 				headline = []
 				prices = []
-				for j in range(len(globals.wealth_amount)-1):
+				for j in range(nb_products):
 					name = str(globals.config[str(globals.config.sections()[j])]["name"])
 					headline.append(name)
 					headline.append("Price")
 					x,p_buy,p_sell = globals.parseDekaData(j,name) #reading in data...
 					prices.append(p_sell[-globals.mode_history_days:])
-				topbar2 = ("{:10}"+int(ncols*0.5-1)*" | {:^8}  {:<6}").format("Dates",*headline)
+				topbar2 = ("{:10}"+nb_products*" | {:^8}  {:<6}").format("Dates",*headline)
 				if globals.mode_only_state:
 					print("="*(len(topbar)+1))
 				else:
@@ -110,9 +105,7 @@ if __name__ == '__main__':
 				print("-"*(len(topbar2)+1))
 				for i in range(globals.mode_history_days):
 					values = []
-					for j in range(ncols-1):
-						if j%2 == 1:
-							values.append(prices[int((j-1)*0.5)][-i-1])
-						else:
-							values.append(globals.wealth_amount[int(j/2)][-i-1])
-					print(("{:10}"+int(ncols*0.5-1)*" | {:>8.2f}  {:>6.2f}").format(globals.wealth_dates[0][-i-1],*values))
+					for j in range(nb_products):
+						values.append(globals.wealth_amount[j][-i-1])
+						values.append(prices[j][-i-1])
+					print(("{:10}"+nb_products*" | {:>8.2f}  {:>6.2f}").format(globals.wealth_dates[0][-i-1],*values))
