@@ -8,6 +8,14 @@ import requests
 from datetime import date
 import datetime
 
+#reading in global settings:
+config = configparser.ConfigParser()
+filepath = os.path.dirname(os.path.abspath(__file__))
+config.read(filepath+"/settings.conf")
+
+bash_terminal_font_patched = int(config[str(config.sections()[0])]["using_nerd_fonts"]) #if patched fonts are used, set 1 in settings.conf; otherwise only standard Unicode characters will be used
+
+
 config = configparser.ConfigParser()
 filepath = os.path.dirname(os.path.abspath(__file__))
 config.read(filepath+"/config.conf")
@@ -167,7 +175,7 @@ def updateDekaData(i, name):
 		file.write(r.text)
 		file.close()
 	except requests.exceptions.ConnectionError:
-		error_connection_deka_server.append(("Connection error... Updating database for "+fullname+" failed"))
+		error_connection_deka_server.append(("\033[30;43mWarning:\033[0m Updating database for "+fullname+" failed. Using cached data..."))
 
 def parseDekaData(i, name, update=False):
 	x,y1,y2 = [],[],[]

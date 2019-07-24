@@ -1,11 +1,8 @@
 import sys
-import requests
 
 import globals
 
-bash_terminal_font_patched = True #if patched fonts are used, set True; otherwise only standard Unicode characters will be used
-
-if bash_terminal_font_patched:
+if globals.bash_terminal_font_patched:
 	bash_mode_arrows = {"True":"\033[32m\uf55b\033[37m","False":"\033[31m\uf542\033[37m"} #up, down
 	bash_mode_arrows_bold = {"True":"\033[32m\uf062\033[37m","False":"\033[31m\uf063\033[37m"} #up, down
 	bash_mode_arrows_stagnation = "\uf553"
@@ -33,10 +30,10 @@ if __name__ == '__main__':
 				try:
 					globals.mode_history_days = int(args[args.index("--hist")+1])
 				except ValueError:
-					if args[args.index("--hist")+1][0]!="-": print("Warning: could not convert",args[args.index("--hist")+1],"to int; default: 10")
+					if args[args.index("--hist")+1][0]!="-": print("\033[30;43mWarning:\033[0m  could not convert","'"+args[args.index("--hist")+1]+"'","to int; using default: 10")
 					globals.mode_history_days = 10
 				if globals.mode_history_days <= 0:
-					print("Warning: ",globals.mode_history_days,"is smaller then 0; returning to default: 10")
+					print("\033[30;43mWarning:\033[0m ",globals.mode_history_days,"is smaller then 0; returning to default: 10")
 					globals.mode_history_days = 10
 			else:
 				globals.mode_history_days = 10
