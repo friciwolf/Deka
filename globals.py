@@ -35,6 +35,9 @@ mode_only_state = False
 mode_CLI = False
 mode_history_days = -999
 
+#Information-level info
+info = []
+
 #Error printouts:
 error_connection_deka_server = []
 
@@ -104,7 +107,8 @@ def checkMonthlyAutomatisation(i,name):
 					datebuy=d
 					break
 			if datebuy not in date_b:
-				print_if_allowed("bought of",name,"on",datebuy,"for",config[i]["aut_amount"])
+				x,y1,y2 = parseDekaData(i, name)
+				info.append(str("\033[30;44mInfo:\033[0m Invested " +config[i]["aut_amount"]+ " in "+name+" on " + str(datebuy) + " for " + str(y2[int(x.index(str(datebuy)))])))
 				date_b = [datebuy]+date_b
 				amount_b = [str(config[i]["aut_amount"])]+amount_b
 				writeNewCSVData(i,name,date_b,amount_b)
@@ -273,6 +277,8 @@ def readIn_and_update_Data():
 			print("") #ensuring new printouts are written in new lines...
 			for s in error_connection_deka_server:
 				print(s)
+			for item in info:
+				print_if_allowed(item)
 
 def print_if_allowed(*string):
 	global printing_allowed
