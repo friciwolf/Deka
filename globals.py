@@ -242,7 +242,10 @@ def readIn_and_update_Data():
 				index = x.index(dates_from_day_1[j])
 				if k1>-1:
 					if dates_from_day_1[j]==date_b[k1]:
-						pcs_at_t+=round(ConvertToFloat(amount_b[k1])*(float(y2[index])/float(y1[index])) /float(y2[index]),3)
+						if ConvertToFloat(amount_b[k1])>=0:
+							pcs_at_t+=round(ConvertToFloat(amount_b[k1])*(float(y2[index])/float(y1[index])) /float(y2[index]),3)
+						else:
+							pcs_at_t+=round(ConvertToFloat(amount_b[k1])/float(y2[index]),3)
 						inv+=ConvertToFloat(amount_b[k1])
 						k1-=1
 				if k2>-1:
