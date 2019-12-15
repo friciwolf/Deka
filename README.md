@@ -1,10 +1,10 @@
 # Deka
-A small python script helping to get a better insight into the temporary evolution of your DekaBank investments.
-The script does not directly access your banking account, rather deriving every information from your monthly investments, which are stored in .csv files (~Excel sheets) as plain text.
+A small python script helping to get a better insight into the temporal evolution of your DekaBank investments.
+The script does not directly access your banking account, rather deriving every information from your monthly investments, which are stored in .csv files (~Excel sheets) as plain text, which can be assigned to an other user account and then be accessed via sudo. Password protection+encryption of the datafiles are planned as features.
 
-Primarily developed on MacOS X Mojave (10.14), tested on Linux Mint 18.2 Sonya. Windows support planned.
+Primarily developed on MacOS X Catalina (10.15), tested on Linux Mint 18.2 Sonya. Windows support planned.
 
-Dependencies: plotly (used for the interactive plots), wxPython (for the GUI), which are available via pip.
+Dependencies: plotly (used for the interactive plots), wxPython (for the GUI), both of which are available via pip.
 
 # Setup
 1. You will need to install [plotly](https://plot.ly/python/getting-started/) via:
@@ -33,11 +33,11 @@ pythonw deka.py
 ```
 
 # Terminal outputs
-Launching ```pythonw deka.py -s``` one can get a brief up-to-date summary about the investments in the command line without opening the app. The output looks something like the following:
+Launching ```pythonw deka.py -s``` one gets a brief up-to-date summary about the investments in the command line without opening the app. The output looks something like the following:
 
 ![Alt text](/screenshots/deka_s.png?raw=true "")
 
-Typing ```pythonw deka.py --hist n``` prints the history of every investment wrt to the last n days. Useful to interpret the arrows in the previous command with which one can combine this one as ```pythonw deka.py -s --hist 7```.
+Typing ```pythonw deka.py --hist n``` prints the history of every investment up to the last n days. One can combine it with the prevoius one as ```pythonw deka.py -s --hist 7```.
 
 # Screenshots
 
