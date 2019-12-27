@@ -1,10 +1,10 @@
 # Deka
 A small python script helping to get a better insight into the temporal evolution of your DekaBank investments.
-The script does not directly access your banking account, rather deriving every information from your monthly investments, which are stored in .csv files (~Excel sheets) as plain text, which can be assigned to an other user account and then be accessed via sudo. Password protection+encryption of the datafiles are planned as features.
+The script does not directly access your banking account, rather deriving every information from your monthly investments, which are stored in (encrypted) .csv files (~Excel sheets).
 
 Primarily developed on MacOS X Catalina (10.15), tested on Linux Mint 18.2 Sonya. Windows support planned.
 
-Dependencies: plotly (used for the interactive plots), wxPython (for the GUI), both of which are available via pip.
+Dependencies: plotly (used for the interactive plots), wxPython (for the GUI), the cryptography library (for the encryptions) all of which are available via pip.
 
 # Setup
 1. You will need to install [plotly](https://plot.ly/python/getting-started/) via:
@@ -30,6 +30,23 @@ function deka {
 4. Under OS X you can launch the script via
 ```
 pythonw deka.py
+```
+
+# Encryption
+By default, the .csv-sheets are not encrypted in order facilitate the setup procedure. Once ready, these files can be encrypted via
+```
+deka encrypt
+```
+and eventually decrypted through
+```
+deka decrypt
+```
+if further edits and changes are needed.
+
+# Password
+During the first launch, you will need to setup your login password, which can be changed anytime by typing
+```
+deka passwd
 ```
 
 # Terminal outputs
