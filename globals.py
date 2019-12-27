@@ -4,21 +4,46 @@ import csv
 import time
 import configparser
 import requests
+import shutil
 
+from getpass import getpass
 from datetime import date
 import datetime
 
-#reading in global settings:
-config = configparser.ConfigParser()
+import encryption
+
+#reading in the global settings:
+settings = configparser.ConfigParser()
 filepath = os.path.dirname(os.path.abspath(__file__))
-config.read(filepath+"/settings.conf")
+settings.read(filepath+"/settings.conf")
 
-bash_terminal_font_patched = int(config[str(config.sections()[0])]["using_nerd_fonts"]) #if patched fonts are used, set 1 in settings.conf; otherwise only standard Unicode characters will be used
-
-
+#reading in investment config data:
 config = configparser.ConfigParser()
-filepath = os.path.dirname(os.path.abspath(__file__))
 config.read(filepath+"/config.conf")
+
+#if patched fonts are used, set 1 in settings.conf; otherwise only standard Unicode characters will be displayed
+bash_terminal_font_patched = int(settings[str(settings.sections()[0])]["using_nerd_fonts"])
+
+#Getting or Setting the salt:
+encryption_salt = str(settings[str(settings.sections()[0])]["encryption_salt"]) #getting the encryption salt
+if encryption_salt == "":
+	encryption_salt = encryption.generateSalt()
+	settings["settings"]["encryption_salt"]=encryption_salt
+	encryption.password = getpass("Please initialize your password:\n").encode()
+else:
+	encryption.password = getpass("Please enter your password:\n").encode()
+encryption_salt = bytes(encryption_salt.encode())
+
+#Getting or Setting the secret message which is used to check the password provided by the user
+secret_message = str(settings[str(settings.sections()[0])]["secret_message"]) #getting the encryption salt
+if secret_message == "":
+	secret_message = encryption.generateSecretMessage(encryption_salt)
+	settings["settings"]["secret_message"]=secret_message
+secret_message = bytes(secret_message.encode())
+
+encryption.checkPassword(secret_message, encryption_salt)
+
+files_encrypted = bool(int(settings[str(settings.sections()[0])]["encrypted"])) #to check later on whether the csv files are encrypted; 1==yes, 0==no
 
 wealth_dates = []
 wealth_amount = []
@@ -71,11 +96,24 @@ def ConvertDateToGerman(x):
 	return r
 
 def writeNewCSVData(i,name,new_date_b,new_amount_b):
-	with open("csv/"+name+"/"+name+"_inv.csv", mode='w') as csvfile:
-		writer = csv.writer(csvfile,delimiter=";")
-		writer.writerow(["Date","Amount",""])
+	if files_encrypted:
+		with open("csv/"+name+"/"+name+"_inv.csv", 'rb') as f:
+			data = f.read()
+		f = encryption.getFernet(encryption_salt)
+		decrypted = f.decrypt(data).decode()
+		newcontent = "Date;Amount\n"
 		for j in range(len(new_date_b)):
-			writer.writerow([ConvertDateToGerman(new_date_b[j]),new_amount_b[j]])
+			newcontent+=ConvertDateToGerman(new_date_b[j])+";"+new_amount_b[j]+"\n"
+		encrypted = f.encrypt(bytes(newcontent.encode()))
+		with open("csv/"+name+"/"+name+"_inv.csv", 'wb') as file:
+			file.write(encrypted)
+	else:
+		'''previous CSV Writer'''
+		with open("csv/"+name+"/"+name+"_inv.csv", mode='w') as csvfile:
+			writer = csv.writer(csvfile,delimiter=";")
+			writer.writerow(["Date","Amount",""])
+			for j in range(len(new_date_b)):
+				writer.writerow([ConvertDateToGerman(new_date_b[j]),new_amount_b[j]])
 
 def checkMonthlyAutomatisation(i,name):
 	deka_date = []
@@ -88,11 +126,25 @@ def checkMonthlyAutomatisation(i,name):
 			deka_price.append(ConvertToFloat(row['Ausgabepreis']))
 
 	date_b,amount_b = [],[]
-	with open("csv/"+name+"/"+name+"_inv.csv") as csvfile:
-		reader = csv.DictReader(csvfile, delimiter=";")
-		for row in reader:
-			date_b.append(date(int(row['Date'][-4:]),int(row['Date'][3:5]),int(row['Date'][:2])))
-			amount_b.append(str(row['Amount']))
+	if files_encrypted:
+		#decrypting...
+		with open("csv/"+name+"/"+name+"_inv.csv","rb") as file:
+			data = file.read()
+# 			print("csv/"+name+"/"+name+"_inv.csv","is being decrypted...")
+			decrypted = encryption.getFernet(encryption_salt).decrypt(data).decode()
+			for rows in decrypted.split("\n")[1:]: #ignoring the headline
+				Date = rows.split(";")[0]
+				if Date=="": break #end of file
+				amount = rows.split(";")[1]
+				date_b.append(date(int(Date[-4:]),int(Date[3:5]),int(Date[:2])))
+				amount_b.append(str(amount))
+	else:
+		'''previous decryptor...'''
+		with open("csv/"+name+"/"+name+"_inv.csv") as csvfile:
+			reader = csv.DictReader(csvfile, delimiter=";")
+			for row in reader:
+				date_b.append(date(int(row['Date'][-4:]),int(row['Date'][3:5]),int(row['Date'][:2])))
+				amount_b.append(str(row['Amount']))
 	monthly_autom = config[i]["aut"]
 	if monthly_autom !="":
 		monthly_d_0 = date(int(monthly_autom[-4:]),int(monthly_autom[3:5]),int(monthly_autom[:2]))
@@ -124,44 +176,107 @@ def checkMonthlyAutomatisation(i,name):
 def parseInvestementData(i, name, AsDate=False):
 	checkMonthlyAutomatisation(i, name)
 	date_b,amount_b,date_d,amount_d = [],[],[],[]
-	with open("csv/"+name+"/"+name+"_inv.csv") as csvfile:
-		reader = csv.DictReader(csvfile, delimiter=";")
-		for row in reader:
-			if AsDate: date_b.append(str(date(int(row['Date'][-4:]),int(row['Date'][3:5]),int(row['Date'][:2]))))
-			else: date_b.append(str(row['Date'][:2])+"."+str(row['Date'][3:5])+"."+str(row['Date'][-4:]))#y,m,d
-			amount_b.append(str(row['Amount']))
-	with open("csv/"+name+"/"+name+"_div.csv") as csvfile:
-		reader = csv.DictReader(csvfile, delimiter=";")
-		for row in reader:
-			if AsDate: date_d.append(str(date(int(row['Date'][-4:]),int(row['Date'][3:5]),int(row['Date'][:2]))))
-			else: date_d.append(str(row['Date'][:2])+"."+str(row['Date'][3:5])+"."+str(row['Date'][-4:]))#y,m,d
-			amount_d.append(str(row['Amount']))
-	return date_b,amount_b,date_d,amount_d
-
-def parseTransferedDividendData(name,AsDate=False, AsFloat=False):
-	date_d,amount_d = [],[]
-	try:
-		with open("csv/"+name+"/"+name+"_div_trans.csv") as csvfile:
+	if files_encrypted:
+		#decrypting...
+		with open("csv/"+name+"/"+name+"_inv.csv","rb") as file:
+			data = file.read()
+# 			print("csv/"+name+"/"+name+"_inv.csv","is being decrypted...")
+			decrypted = encryption.getFernet(encryption_salt).decrypt(data)
+			decrypted = decrypted.decode()
+			for rows in decrypted.split("\n")[1:]: #ignoring the headline
+				Date = rows.split(";")[0]
+				if Date=="": break #end of file
+				amount = rows.split(";")[1]
+				if AsDate: date_b.append(str(date(int(Date[-4:]),int(Date[3:5]),int(Date[:2]))))
+				else: date_b.append(str(Date[:2])+"."+str(Date[3:5])+"."+str(Date[-4:]))#y,m,d
+				amount_b.append(str(amount))
+		with open("csv/"+name+"/"+name+"_div.csv","rb") as file:
+			data = file.read()
+# 			print("csv/"+name+"/"+name+"_div.csv","is being decrypted...")
+			decrypted = encryption.getFernet(encryption_salt).decrypt(data)
+			decrypted = decrypted.decode()
+			for rows in decrypted.split("\n")[1:]:
+				Date = rows.split(";")[0]
+				if Date=="": break #end of file
+				amount = rows.split(";")[1]
+				if AsDate: date_d.append(str(date(int(Date[-4:]),int(Date[3:5]),int(Date[:2]))))
+				else: date_d.append(str(Date[:2])+"."+str(Date[3:5])+"."+str(Date[-4:]))#y,m,d
+				amount_d.append(str(amount))
+	else:
+		'''previous parser using .csv parsers'''
+		with open("csv/"+name+"/"+name+"_inv.csv") as csvfile:
+			reader = csv.DictReader(csvfile, delimiter=";")
+			for row in reader:
+				if AsDate: date_b.append(str(date(int(row['Date'][-4:]),int(row['Date'][3:5]),int(row['Date'][:2]))))
+				else: date_b.append(str(row['Date'][:2])+"."+str(row['Date'][3:5])+"."+str(row['Date'][-4:]))#y,m,d
+				amount_b.append(str(row['Amount']))
+		with open("csv/"+name+"/"+name+"_div.csv") as csvfile:
 			reader = csv.DictReader(csvfile, delimiter=";")
 			for row in reader:
 				if AsDate: date_d.append(str(date(int(row['Date'][-4:]),int(row['Date'][3:5]),int(row['Date'][:2]))))
 				else: date_d.append(str(row['Date'][:2])+"."+str(row['Date'][3:5])+"."+str(row['Date'][-4:]))#y,m,d
-				if AsFloat: amount_d.append(ConvertToFloat(str(row['Amount'])))
-				else: amount_d.append(str(row['Amount']))
-	except FileNotFoundError:
-		date_d,amount_d = [],[]
+				amount_d.append(str(row['Amount']))
+	return date_b,amount_b,date_d,amount_d
+
+def parseTransferedDividendData(name,AsDate=False, AsFloat=False):
+	date_d,amount_d = [],[]
+	if files_encrypted:
+		#decrypting...
+		try:
+			with open("csv/"+name+"/"+name+"_div_trans.csv","rb") as file:
+				data = file.read()
+# 				print("csv/"+name+"/"+name+"_div_trans.csv","is being decrypted...")
+				decrypted = encryption.getFernet(encryption_salt).decrypt(data).decode()
+				for rows in decrypted.split("\n")[1:]:
+					Date = rows.split(";")[0]
+					if Date=="": break #end of file
+					amount = rows.split(";")[1]
+					if AsDate: date_d.append(str(date(int(Date[-4:]),int(Date[3:5]),int(Date[:2]))))
+					else: date_d.append(str(Date[:2])+"."+str(Date[3:5])+"."+str(Date[-4:]))#y,m,d
+					if AsFloat: amount_d.append(ConvertToFloat(str(amount)))
+					else: amount_d.append(str(amount))
+		except FileNotFoundError:
+			date_d,amount_d = [],[]
+	else:
+		'''previous parser using .csv parsers'''
+		try:
+			with open("csv/"+name+"/"+name+"_div_trans.csv") as csvfile:
+				reader = csv.DictReader(csvfile, delimiter=";")
+				for row in reader:
+					if AsDate: date_d.append(str(date(int(row['Date'][-4:]),int(row['Date'][3:5]),int(row['Date'][:2]))))
+					else: date_d.append(str(row['Date'][:2])+"."+str(row['Date'][3:5])+"."+str(row['Date'][-4:]))#y,m,d
+					if AsFloat: amount_d.append(ConvertToFloat(str(row['Amount'])))
+					else: amount_d.append(str(row['Amount']))
+		except FileNotFoundError:
+			date_d,amount_d = [],[]
 	return date_d,amount_d
 
 
 def parseLiqudityData(name,AsDate=False, AsFloat=False):
 	date_b,amount_b = [],[]
-	with open("csv/"+name+"/"+name+".csv") as csvfile:
-		reader = csv.DictReader(csvfile, delimiter=";")
-		for row in reader:
-			if AsDate: date_b.append(str(date(int(row['Date'][-4:]),int(row['Date'][3:5]),int(row['Date'][:2]))))
-			else: date_b.append(str(row['Date'][:2])+"."+str(row['Date'][3:5])+"."+str(row['Date'][-4:]))#y,m,d
-			if AsFloat: amount_b.append(ConvertToFloat(str(row['Amount'])))
-			else: amount_b.append(str(row['Amount']))
+	if files_encrypted:
+		#decrypting...
+		with open("csv/"+name+"/"+name+".csv","rb") as file:
+			data = file.read()
+# 			print("csv/"+name+"/"+name+".csv","is being decrypted...")
+			decrypted = encryption.getFernet(encryption_salt).decrypt(data).decode()
+			for rows in decrypted.split("\n")[1:]: #ignoring the headline
+				Date = rows.split(";")[0]
+				if Date=="": break #end of file
+				amount = rows.split(";")[1]
+				if AsDate: date_b.append(str(date(int(Date[-4:]),int(Date[3:5]),int(Date[:2]))))
+				else: date_b.append(str(Date[:2])+"."+str(Date[3:5])+"."+str(Date[-4:]))#y,m,d
+				if AsFloat: amount_b.append(ConvertToFloat(str(amount)))
+				else: amount_b.append(str(amount))
+	else:
+		'''previous parser using .csv parsers'''
+		with open("csv/"+name+"/"+name+".csv") as csvfile:
+			reader = csv.DictReader(csvfile, delimiter=";")
+			for row in reader:
+				if AsDate: date_b.append(str(date(int(row['Date'][-4:]),int(row['Date'][3:5]),int(row['Date'][:2]))))
+				else: date_b.append(str(row['Date'][:2])+"."+str(row['Date'][3:5])+"."+str(row['Date'][-4:]))#y,m,d
+				if AsFloat: amount_b.append(ConvertToFloat(str(row['Amount'])))
+				else: amount_b.append(str(row['Amount']))
 	return date_b,amount_b
 
 def updateDekaData(i, name):
@@ -223,7 +338,7 @@ def readIn_and_update_Data():
 		percent = float(0) / len(config.sections())
 		arrow = '-' * int(round(percent * 50)-1) + '>'
 		spaces = ' ' * (50 - len(arrow))
-		sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}%".format(arrow +"\033[0m" + spaces, int(round(percent * 100))))
+		sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}% {2}".format(arrow + "\033[0m" + spaces, int(round(percent * 100)),"decrypting" if files_encrypted else ""))
 		sys.stdout.flush()
 	for i in range(len(config.sections())):
 		name = str(config[str(config.sections()[i])]["name"])
@@ -274,7 +389,7 @@ def readIn_and_update_Data():
 			percent = float(i+1) / len(config.sections())
 			arrow = '-' * int(round(percent * 50)-1) + '>'
 			spaces = ' ' * (50 - len(arrow))
-			sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}%".format(arrow + "\033[0m" + spaces, int(round(percent * 100))))
+			sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}% {2}".format(arrow + "\033[0m" + spaces, int(round(percent * 100)),"decrypting" if files_encrypted else ""))
 			sys.stdout.flush()
 		if i==max(range(len(config.sections()))):
 			print("") #ensuring new printouts are written in new lines...
@@ -286,3 +401,11 @@ def readIn_and_update_Data():
 def print_if_allowed(*string):
 	global printing_allowed
 	if printing_allowed: print(*string)
+
+def closeAndCleanup():
+	#saving the settings.conf file
+	with open(filepath+"/settings.conf","w") as configfile:
+		settings.write(configfile)
+# 	print(filepath)
+	if(os.path.isdir(os.path.dirname(os.path.abspath(__file__))+"/html/")):
+		shutil.rmtree(filepath+"/html/")

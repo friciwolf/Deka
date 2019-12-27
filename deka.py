@@ -2,6 +2,10 @@ import sys
 
 import globals
 
+from encryption import decryptCSVs
+from encryption import encryptCSVs
+from encryption import changePassword
+
 if globals.bash_terminal_font_patched:
 	bash_mode_arrows = {"True":"\033[32m\uf55b\033[37m","False":"\033[31m\uf542\033[37m"} #up, down
 	bash_mode_arrows_bold = {"True":"\033[32m\uf062\033[37m","False":"\033[31m\uf063\033[37m"} #up, down
@@ -19,6 +23,24 @@ if __name__ == '__main__':
 		print("{:4} {:25} - {}".format("","--msg, --msgs or -m","Shows startup progress"))
 		print("{:4} {:25} - {}".format("","--status, --state or -s","Shows data only in terminal"))
 		print("{:4} {:25} - {}".format("","--hist n", "Shows investement history of the past n (def: 10) days"))
+		print("{:4} {:25} - {}".format("","encrypt", "Encrypts the datafiles"))
+		print("{:4} {:25} - {}".format("","decrypt", "Decrypts the datafiles"))
+		print("{:4} {:25} - {}".format("","passwd", "Changes the password"))
+		exit()
+	elif "decrypt" in args:
+		if globals.files_encrypted==True:
+			decryptCSVs(globals.encryption_salt,globals.config)
+			globals.settings["settings"]["encrypted"]="0"
+		else:
+			print("Datasets already decrypted.")
+	elif "encrypt" in args:
+		if globals.files_encrypted==False:
+			encryptCSVs(globals.encryption_salt,globals.config)
+			globals.settings["settings"]["encrypted"]="1"
+		else:
+			print("Datasets already encrypted.")
+	elif "passwd" in args:
+		changePassword(globals.config,globals.settings,globals.encryption_salt,globals.files_encrypted)
 	else:
 		if ("--msg" in args) or ("--msgs" in args) or ("-m" in args): globals.printing_allowed = True
 		if ("--status" in args) or ("--state" in args) or ("-s" in args):
@@ -106,3 +128,4 @@ if __name__ == '__main__':
 						values.append(globals.wealth_amount[j][-i-1])
 						values.append(prices[j][-i-1])
 					print(("{:10}"+nb_products*" | {:>8.2f}  {:>6.2f}").format(globals.wealth_dates[0][-i-1],*values))
+	globals.closeAndCleanup()
