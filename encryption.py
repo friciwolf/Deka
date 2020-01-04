@@ -47,7 +47,7 @@ def generateSalt():
 	return newsalt
 
 def decryptCSVs(salt,config):
-	print("decrypting datasets...")
+	print("decrypting...")
 	labels=["_div_trans.csv","_div.csv","_inv.csv",".csv"]
 	for products in config.sections():
 		name = config[products]["name"]

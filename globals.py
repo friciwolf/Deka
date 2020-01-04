@@ -11,6 +11,7 @@ from datetime import date
 import datetime
 
 import encryption
+import ScopeRating
 
 #reading in the global settings:
 settings = configparser.ConfigParser()
@@ -53,18 +54,21 @@ dividends_invested = []
 dividends_transferred = []
 liquidity = []
 current_holding = []
+scopeAnalysisData = []
 
 #Argument settings
 printing_allowed = False
 mode_only_state = False
 mode_CLI = False
 mode_history_days = -999
+launchWithUpdate = True
 
 #Information-level info
 info = []
 
 #Error printouts:
 error_connection_deka_server = []
+error_connection_scope_server = []
 
 def ConvertToFloat(x):
 	r = ""
@@ -333,17 +337,17 @@ def unifyData():
 				else: amount_unified[i].append(amount_unified[i][-1])
 	return dates_unified, amount_unified
 
-def readIn_and_update_Data():
+def readIn_and_update_Data(update=True):
 	if printing_allowed==True or mode_CLI==True:
 		percent = float(0) / len(config.sections())
 		arrow = '-' * int(round(percent * 50)-1) + '>'
 		spaces = ' ' * (50 - len(arrow))
-		sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}% {2}".format(arrow + "\033[0m" + spaces, int(round(percent * 100)),"decrypting" if files_encrypted else ""))
+		sys.stdout.write("\rFetching Data...:       [\033[47;m{0}] {1:<3}% {2}".format(arrow + "\033[0m" + spaces, int(round(percent * 100)),"decrypting\u2026" if files_encrypted else ""))
 		sys.stdout.flush()
 	for i in range(len(config.sections())):
 		name = str(config[str(config.sections()[i])]["name"])
 		if str(config[str(config.sections()[i])]["type"])=="deka":
-			x,y1,y2 = parseDekaData(i, name, True)
+			x,y1,y2 = parseDekaData(i, name, update)
 			date_b,amount_b,date_d,amount_d = parseInvestementData(config.sections()[i],name,AsDate=True)
 			dates_from_day_1 = x[x.index(date_b[-1]):]
 
@@ -389,7 +393,7 @@ def readIn_and_update_Data():
 			percent = float(i+1) / len(config.sections())
 			arrow = '-' * int(round(percent * 50)-1) + '>'
 			spaces = ' ' * (50 - len(arrow))
-			sys.stdout.write("\rFetching Data...: [\033[47;m{0}] {1}% {2}".format(arrow + "\033[0m" + spaces, int(round(percent * 100)),"decrypting" if files_encrypted else ""))
+			sys.stdout.write("\rFetching Data...:       [\033[47;m{0}] {1:<3}% {2}".format(arrow + "\033[0m" + spaces, int(round(percent * 100)),"decrypting\u2026" if files_encrypted else ""))
 			sys.stdout.flush()
 		if i==max(range(len(config.sections()))):
 			print("") #ensuring new printouts are written in new lines...
@@ -397,6 +401,46 @@ def readIn_and_update_Data():
 				print(s)
 			for item in info:
 				print_if_allowed(item)
+
+def readInScopeAnalysisData(update=True):
+	if printing_allowed==True or mode_CLI==True:
+		percent = float(0) / len(config.sections())
+		arrow = '-' * int(round(percent * 50)-1) + '>'
+		spaces = ' ' * (50 - len(arrow))
+		sys.stdout.write("\rFetching Scope Data...: [\033[47;m{0}] {1:<3}%".format(arrow + "\033[0m" + spaces, int(round(percent * 100))))
+		sys.stdout.flush()
+	for i in range(len(config.sections())):
+		name = str(config[str(config.sections()[i])]["name"])
+		fullname = str(config[str(config.sections()[i])]["fullname"])
+		s = ScopeRating.ScopeData("")
+		if update:
+			try:
+				if str(config[str(config.sections()[i])]["type"])=="deka":
+					isin = str(config[str(config.sections()[i])]["isin"])
+					s = ScopeRating.ScopeData(isin)
+				filename = "csv/"+name+"/"+name+"_Scope.html"
+				file = open(filename,"w+")
+				file.write(s.html)
+				file.close()
+			except requests.exceptions.ConnectionError:
+				error_connection_scope_server.append(("\033[30;43mWarning:\033[0m Updating ScopeAnalysis database for "+fullname+" failed. Using cached data..."))
+				s.loadFromFile("csv/"+name+"/"+name+"_Scope.html")
+		else:
+			if str(config[str(config.sections()[i])]["type"])=="deka":
+				s.isin = str(config[str(config.sections()[i])]["isin"])
+				s.loadFromFile("csv/"+name+"/"+name+"_Scope.html")
+		scopeAnalysisData.append(s)
+		#updating the status bar...
+		if printing_allowed==True or mode_CLI==True:
+			percent = float(i+1) / len(config.sections())
+			arrow = '-' * int(round(percent * 50)-1) + '>'
+			spaces = ' ' * (50 - len(arrow))
+			sys.stdout.write("\rFetching Scope Data...: [\033[47;m{0}] {1:<3}%".format(arrow + "\033[0m" + spaces, int(round(percent * 100))))
+			sys.stdout.flush()
+		if i==max(range(len(config.sections()))):
+			print("") #ensuring new printouts are written in new lines...
+			for s in error_connection_scope_server:
+				print(s)
 
 def print_if_allowed(*string):
 	global printing_allowed

@@ -7,13 +7,15 @@ import wx
 import wx.html2
 import wx.grid
 import wx.adv
+import numpy as np
+import wx.lib.agw.hyperlink
 from wx.lib import masked
 
 import globals
 
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
-		wx.Frame.__init__(self, parent, title=title, size=(1040,600))
+		wx.Frame.__init__(self, parent, title=title, size=(1100,600))
 		self.CenterOnScreen()
 		self.CreateStatusBar()
 #		self.SetStatusText("This is the statusbar")
@@ -54,7 +56,10 @@ class MyFrame(wx.Frame):
 				else: clr="red"
 				wx.StaticText(panelC,wx.ID_ANY, fullname+" :", (10,(j+1)*40))
 				wx.StaticText(panelC,wx.ID_ANY, "", (250,(j+1)*40)).SetLabelMarkup("<b><span color='"+str(globals.config[i]["color"])+"'>"+"{:.2f}".format(globals.wealth_amount[j][-1])+" </span></b>")
-				wx.StaticText(panelC,wx.ID_ANY, "", (250-5,(j+1)*40+20)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+" ("+"{:.2f}".format(round(((globals.wealth_amount[j][-1]-globals.invested[j])/globals.invested[j])*100,2))+" %)</span>")
+				try:
+					wx.StaticText(panelC,wx.ID_ANY, "", (250-5,(j+1)*40+20)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+" ("+"{:.2f}".format(round(((globals.wealth_amount[j][-1]-globals.invested[j])/globals.invested[j])*100,2))+" %)</span>")
+				except ZeroDivisionError:
+					wx.StaticText(panelC,wx.ID_ANY, "", (250-5,(j+1)*40+20)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+"</span>")
 				total_inv += globals.invested[j]
 				total += globals.wealth_amount[j][-1]
 			if str(globals.config[i]["type"])=="liq":
@@ -82,6 +87,7 @@ class MyFrame(wx.Frame):
 		self.DatePicker_ids = [] #600+
 		self.DatePickers = []
 		self.SpinCtrls = []#700+
+		self.Notebooks = []#800+
 
 		self.choices=["Fond Evolution","Investment Evolution"]
 
@@ -126,7 +132,10 @@ class MyFrame(wx.Frame):
 				wx.StaticText(panelC,wx.ID_ANY,str("{:.2f}".format(globals.dividends_transferred[j])),(250,185))
 				wx.StaticText(panelC,wx.ID_ANY,"Total gain/loss:",(10,205))
 				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,205)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+"</span>")
-				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,225)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(((globals.wealth_amount[j][-1]-globals.invested[j])/globals.invested[j])*100,2))+" % </span>")
+				try:
+					wx.StaticText(panelC,wx.ID_ANY,"",(250-5,225)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(((globals.wealth_amount[j][-1]-globals.invested[j])/globals.invested[j])*100,2))+" % </span>")
+				except ZeroDivisionError:
+					wx.StaticText(panelC,wx.ID_ANY,"",(250-5,225)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+" </span>")
 				cb_aut = wx.CheckBox(panelC,500+len(self.checkboxes_auto_ids),"Monthly Automatisation from:",(10,255))
 				self.checkboxes_auto_ids.append(cb_aut.GetId())
 				self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxAut, cb_aut)
@@ -155,8 +164,14 @@ class MyFrame(wx.Frame):
 			if str(globals.config[i]["type"])=="liq":
 				wx.StaticText(panelC,wx.ID_ANY,"Available Liqudity",(10,185))
 				wx.StaticText(panelC,wx.ID_ANY,str(globals.liquidity[0]),(250,185))
+			
 			panelD = wx.Window(panelB,wx.ID_ANY)
-			grid = wx.grid.Grid(panelD)
+			smallTabs = wx.Notebook(panelD,style=wx.BK_TOP,id=800+len(self.Notebooks))
+			self.Notebooks.append(smallTabs)
+			self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED,self.EvtNotebookPageChanged,smallTabs)
+			panelE = wx.Window(smallTabs,wx.ID_ANY)
+			smallTabs.AddPage(panelE,"History")
+			grid = wx.grid.Grid(panelE)
 			grid.SetRowLabelSize(0)
 			grid.SetMargins(0,0)
 			grid.AutoSizeColumns(False)
@@ -196,9 +211,38 @@ class MyFrame(wx.Frame):
 			grid.SetRowLabelSize(20)
 			grid.EnableEditing(False)
 			grid.DisableDragGridSize()
+			
+			boxsizerE = wx.BoxSizer(wx.VERTICAL)
+			boxsizerE.Add(grid, 0, wx.EXPAND)
+			panelE.SetSizer(boxsizerE)
+			
+			if str(globals.config[i]["type"])=="deka":
+				panelF = wx.Window(smallTabs,wx.ID_ANY)
+				smallTabs.AddPage(panelF,"ScopeAnalyis")
+				s = globals.scopeAnalysisData[globals.config.sections().index(i)]
+				panelFa = wx.Window(panelF,wx.ID_ANY)
+				wx.StaticText(panelFa,wx.ID_ANY,"Scope Rating ",(10,5))
+				wx.StaticText(panelFa,wx.ID_ANY,"{} ({})".format(s.rating,str(s.score)+"/100" if s.score>0 else "--/--"),(250,5))
+				wx.lib.agw.hyperlink.HyperLinkCtrl(panelFa,wx.ID_ANY, "Detailed Report",URL=s.url,pos=(225,25))
+				
+				boxsizerFa = wx.BoxSizer(wx.VERTICAL)
+				panelFa.SetSizer(boxsizerFa)
+				
+				panelFb = wx.Window(panelF,wx.ID_ANY)
+				browser3 = wx.html2.WebView.New(panelFb,pos=(0,10))
+				browser3.LoadURL("file://"+globals.filepath+"/html/"+name+"/"+name+"_Scope.html")
+				
+				boxsizerFb = wx.BoxSizer(wx.VERTICAL)
+				boxsizerFb.Add(browser3,1,wx.EXPAND)
+				panelFb.SetSizer(boxsizerFb)
+				
+				boxsizerF = wx.BoxSizer(wx.VERTICAL)
+				boxsizerF.Add(panelFa, 1, wx.EXPAND)
+				boxsizerF.Add(panelFb, 2, wx.EXPAND|wx.ALIGN_BOTTOM)
+				panelF.SetSizer(boxsizerF)
 
 			boxsizerD = wx.BoxSizer(wx.VERTICAL)
-			boxsizerD.Add(grid, 0, wx.EXPAND|wx.ALIGN_BOTTOM)
+			boxsizerD.Add(smallTabs, 1, wx.EXPAND)
 			panelD.SetSizer(boxsizerD)
 
 			boxsizerC = wx.BoxSizer(wx.VERTICAL)
@@ -208,8 +252,8 @@ class MyFrame(wx.Frame):
 			panelC.SetSizer(boxsizerC)
 
 			bsizerB = wx.BoxSizer(wx.VERTICAL)
-			bsizerB.Add(panelC, 2, wx.EXPAND)
-			bsizerB.Add(panelD, 1, wx.EXPAND|wx.FIXED_MINSIZE)
+			bsizerB.Add(panelC, 6, wx.EXPAND)
+			bsizerB.Add(panelD, 4, wx.EXPAND|wx.FIXED_MINSIZE)
 			panelB.SetSizer(bsizerB)
 
 			bsizer1 = wx.BoxSizer(wx.HORIZONTAL)
@@ -260,6 +304,12 @@ class MyFrame(wx.Frame):
 			globals.config[globals.config.sections()[j]]["aut_amount"] = ""
 			self.SpinCtrls[j].SetValue("25.00")
 		globals.config.write(open("globals.config.conf","w"))
+		
+	def EvtNotebookPageChanged(self,event):
+		j = int(str(event.GetId())[-1])
+		for k in range(len(self.Notebooks)):
+			if str(globals.config[globals.config.sections()[k]]["type"])=="deka":
+				self.Notebooks[k].SetSelection(self.Notebooks[j].GetSelection())
 
 	def OnDateChanged(self,event):
 		j = int(str(event.GetId())[-1])
@@ -393,6 +443,32 @@ def plot():
 				line=(dict(color = fill_color)))
 			fig = dict(data=[data1, data2], layout=layout)
 			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
+			
+			ScopeData = []
+			cols = [fill_color,"#7f7f7f","gold"]
+			names = ["Fonds","Index","Peergroup Ø"]
+			for j in range(len(globals.scopeAnalysisData[i].peerPerformance)):
+				ScopeData.append(go.Scatter(
+					x = globals.scopeAnalysisData[i].dates,
+					y = np.round(globals.scopeAnalysisData[i].peerPerformance[j][1],4),
+					name = names[j],
+					line = dict(color = cols[j])
+					)
+				)
+			layout = dict(
+				xaxis=dict(type='date'),
+				yaxis=dict(tickformat='.2%'),
+				showlegend=False,
+				margin=go.layout.Margin(
+					l=40,
+					r=0,
+					b=25,
+					t=10#,
+					#pad=4
+				)
+			)
+			fig = dict(data=ScopeData,layout=layout)
+			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_Scope.html"),auto_open=False,config={'displayModeBar': False})
 
 		else:
 			x,y = globals.parseLiqudityData(name, AsDate=True, AsFloat=True)
@@ -440,9 +516,8 @@ def plot():
 			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+".html"), auto_open=False)
 
 def gui_make_plots():
-	if len(globals.error_connection_deka_server)==0:
-		plot()
-		plotOverviewGraphs()
+	plot()
+	plotOverviewGraphs()
 
 
 def gui_main_loop(title):
