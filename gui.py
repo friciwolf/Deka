@@ -50,12 +50,12 @@ class MyFrame(wx.Frame):
 		panelE = wx.Window(panelC, wx.ID_ANY) #For 'Liqudity' and 'Total' indicators
 		total = 0.0
 		total_inv = 0.0
-		panel_scrolled = wx.lib.scrolledpanel.ScrolledPanel(panelD, -1,style = wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER, name="panel1")#,pos=(20,0))
+		panel_scrolled = wx.lib.scrolledpanel.ScrolledPanel(panelD, -1,style = wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER, name="panel1")
 		fgs1 = wx.FlexGridSizer(cols=2, vgap=2, hgap=0)
 		fgs1.SetMinSize(230, 10)
 		
 		#Summary Label
-		st_summary = wx.StaticText(panel_scrolled,wx.ID_ANY, "Summary of assets:")#,(10,10))
+		st_summary = wx.StaticText(panel_scrolled,wx.ID_ANY, "Summary of assets:")
 		st_summary_placeholder = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
 		fgs1.Add(st_summary, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
 		fgs1.Add(st_summary_placeholder, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
@@ -67,8 +67,8 @@ class MyFrame(wx.Frame):
 				clr=""
 				if globals.wealth_amount[j][-1]-globals.invested[j]>0: clr="#00cc00"
 				else: clr="red"
-				st_fullname = wx.StaticText(panel_scrolled,wx.ID_ANY, fullname+" :")#, (10,(j+1)*40))
-				st_placeholder = wx.StaticText(panel_scrolled,wx.ID_ANY, "")#), (10,(j+1)*40))
+				st_fullname = wx.StaticText(panel_scrolled,wx.ID_ANY, fullname+" :")
+				st_placeholder = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
 				st_amount = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
 				st_amount.SetLabelMarkup("<b><span color='"+str(globals.config[i]["color"])+"'>"+"  {:.2f}".format(globals.wealth_amount[j][-1])+" </span></b>")
 				try:
@@ -87,23 +87,14 @@ class MyFrame(wx.Frame):
 				fgs1.Add((0,2))
 			if str(globals.config[i]["type"])=="liq":
 				st_fullname = wx.StaticText(panelE,wx.ID_ANY, fullname +" :", (10,0))
-				st_amount = wx.StaticText(panelE,wx.ID_ANY,"  "+str(globals.liquidity[0]),(217,0))
-# 				fgs1.Add(st_fullname, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
-# 				fgs1.Add(st_amount, flag=wx.ALIGN_LEFT| wx.ALIGN_CENTER_VERTICAL)
-# 				fgs1.Add((0,2))
-# 				fgs1.Add((0,2))
+				st_amount = wx.StaticText(panelE,wx.ID_ANY,"  {:.2f}".format(globals.liquidity[0]),(217,0))
 				
 		#Total Labels
 		st_total_fullname = wx.StaticText(panelE,wx.ID_ANY,"Total (w/o Liquidity):",(10,20))
 		st_total_amount = wx.StaticText(panelE,wx.ID_ANY,"",(217,20))
-		st_total_amount.SetLabelMarkup("<b><span>"+str("  {:.2f}".format(total))+" </span></b>")
-# 		st_total_placeholder = wx.StaticText(panelE,wx.ID_ANY,"",(250,80))
+		st_total_amount.SetLabelMarkup("<b><span>"+"  {:.2f}".format(total)+" </span></b>")
 		st_toal_amount_percentage = wx.StaticText(panelE,wx.ID_ANY,"",(217,40))
 		st_toal_amount_percentage.SetLabelMarkup("<span color='"+("red" if (total-total_inv)<0 else "#00cc00")+"'>"+("+" if (total-total_inv)>0 else "")+"{:.2f}".format(round(total-total_inv,2))+" ("+"{:.2f}".format(round((total-total_inv)*100/total_inv,2))+" %)"+"</span>")
-# 		fgs1.Add(st_total_fullname, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
-# 		fgs1.Add(st_total_amount, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
-# 		fgs1.Add(st_total_placeholder, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
-# 		fgs1.Add(st_toal_amount_percentage, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
 		panel_scrolled.SetSizer(fgs1)
 		panel_scrolled.SetAutoLayout(1)
 		panel_scrolled.SetupScrolling()
@@ -211,7 +202,7 @@ class MyFrame(wx.Frame):
 				self.Bind(wx.EVT_TEXT, self.OnSpinCtrl, SpinCtrlDouble_amount)
 			if str(globals.config[i]["type"])=="liq":
 				wx.StaticText(panelC,wx.ID_ANY,"Available Liqudity",(10,185))
-				wx.StaticText(panelC,wx.ID_ANY,str(globals.liquidity[0]),(250,185))
+				wx.StaticText(panelC,wx.ID_ANY,"{:.2f}".format(globals.liquidity[0]),(250,185))
 			
 			panelD = wx.Window(panelB,wx.ID_ANY)
 			smallTabs = wx.Notebook(panelD,style=wx.BK_TOP,id=800+len(self.Notebooks))
