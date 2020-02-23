@@ -62,6 +62,7 @@ mode_only_state = False
 mode_CLI = False
 mode_history_days = -999
 launchWithUpdate = True
+createGraphsAtStartup = True
 
 #Information-level info
 info = []
@@ -451,5 +452,6 @@ def closeAndCleanup():
 	with open(filepath+"/settings.conf","w") as configfile:
 		settings.write(configfile)
 # 	print(filepath)
-	if(os.path.isdir(os.path.dirname(os.path.abspath(__file__))+"/html/")):
-		shutil.rmtree(filepath+"/html/")
+	if createGraphsAtStartup:
+		if(os.path.isdir(os.path.dirname(os.path.abspath(__file__))+"/html/")):
+			shutil.rmtree(filepath+"/html/")

@@ -9,6 +9,7 @@ import wx.grid
 import wx.adv
 import numpy as np
 import wx.lib.agw.hyperlink
+import wx.lib.scrolledpanel
 from wx.lib import masked
 
 import globals
@@ -44,9 +45,21 @@ class MyFrame(wx.Frame):
 		browser2.LoadURL("file://"+globals.filepath+"/html/"+"overview2.html")
 
 		panelC = wx.Window(panelB, wx.ID_ANY)
-		wx.StaticText(panelC,wx.ID_ANY, "Summary of assets:",(10,10))
+		
+		panelD = wx.Window(panelC, wx.ID_ANY) #For all investment indicators
+		panelE = wx.Window(panelC, wx.ID_ANY) #For 'Liqudity' and 'Total' indicators
 		total = 0.0
 		total_inv = 0.0
+		panel_scrolled = wx.lib.scrolledpanel.ScrolledPanel(panelD, -1,style = wx.TAB_TRAVERSAL|wx.SUNKEN_BORDER, name="panel1")#,pos=(20,0))
+		fgs1 = wx.FlexGridSizer(cols=2, vgap=2, hgap=0)
+		fgs1.SetMinSize(230, 10)
+		
+		#Summary Label
+		st_summary = wx.StaticText(panel_scrolled,wx.ID_ANY, "Summary of assets:")#,(10,10))
+		st_summary_placeholder = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
+		fgs1.Add(st_summary, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
+		fgs1.Add(st_summary_placeholder, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
+		
 		for i in globals.config.sections():
 			fullname = str(globals.config[i]["fullname"])
 			j=globals.config.sections().index(i)
@@ -54,23 +67,58 @@ class MyFrame(wx.Frame):
 				clr=""
 				if globals.wealth_amount[j][-1]-globals.invested[j]>0: clr="#00cc00"
 				else: clr="red"
-				wx.StaticText(panelC,wx.ID_ANY, fullname+" :", (10,(j+1)*40))
-				wx.StaticText(panelC,wx.ID_ANY, "", (250,(j+1)*40)).SetLabelMarkup("<b><span color='"+str(globals.config[i]["color"])+"'>"+"{:.2f}".format(globals.wealth_amount[j][-1])+" </span></b>")
+				st_fullname = wx.StaticText(panel_scrolled,wx.ID_ANY, fullname+" :")#, (10,(j+1)*40))
+				st_placeholder = wx.StaticText(panel_scrolled,wx.ID_ANY, "")#), (10,(j+1)*40))
+				st_amount = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
+				st_amount.SetLabelMarkup("<b><span color='"+str(globals.config[i]["color"])+"'>"+"  {:.2f}".format(globals.wealth_amount[j][-1])+" </span></b>")
 				try:
-					wx.StaticText(panelC,wx.ID_ANY, "", (250-5,(j+1)*40+20)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+" ("+"{:.2f}".format(round(((globals.wealth_amount[j][-1]-globals.invested[j])/globals.invested[j])*100,2))+" %)</span>")
+					st_amount_percentage = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
+					st_amount_percentage.SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+" ("+"{:.2f}".format(round(((globals.wealth_amount[j][-1]-globals.invested[j])/globals.invested[j])*100,2))+" %)</span>")
 				except ZeroDivisionError:
-					wx.StaticText(panelC,wx.ID_ANY, "", (250-5,(j+1)*40+20)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+"</span>")
+					st_amount_percentage = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
+					st_amount_percentage.SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+"</span>")
 				total_inv += globals.invested[j]
 				total += globals.wealth_amount[j][-1]
+				fgs1.Add(st_fullname, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
+				fgs1.Add(st_amount, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
+				fgs1.Add(st_placeholder, flag=wx.ALIGN_LEFT|wx.ALIGN_TOP)
+				fgs1.Add(st_amount_percentage, flag=wx.ALIGN_LEFT|wx.ALIGN_TOP)
+				fgs1.Add((0,2))
+				fgs1.Add((0,2))
 			if str(globals.config[i]["type"])=="liq":
-				wx.StaticText(panelC,wx.ID_ANY, fullname +" :", (10,(j+1)*40))
-				wx.StaticText(panelC,wx.ID_ANY,str(globals.liquidity[0]),(250,(j+1)*40))
-		wx.StaticText(panelC,wx.ID_ANY,"Total (w/o Liquidity):", (10,(len(globals.config.sections())+0.5)*40))
-		wx.StaticText(panelC,wx.ID_ANY,"",(250,(len(globals.config.sections())+0.5)*40)).SetLabelMarkup("<b>"+str("{:.3f}".format(total))+"</b>")
-		wx.StaticText(panelC,wx.ID_ANY,"",(250-5,(len(globals.config.sections())+1.5)*40-20)).SetLabelMarkup("<span color='"+("red" if (total-total_inv)<0 else "#00cc00")+"'>"+("+" if (total-total_inv)>0 else "")+"{:.2f}".format(round(total-total_inv,2))+" ("+"{:.2f}".format(round((total-total_inv)*100/total_inv,2))+" %)"+"</span>")
-
+				st_fullname = wx.StaticText(panelE,wx.ID_ANY, fullname +" :", (10,0))
+				st_amount = wx.StaticText(panelE,wx.ID_ANY,"  "+str(globals.liquidity[0]),(217,0))
+# 				fgs1.Add(st_fullname, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
+# 				fgs1.Add(st_amount, flag=wx.ALIGN_LEFT| wx.ALIGN_CENTER_VERTICAL)
+# 				fgs1.Add((0,2))
+# 				fgs1.Add((0,2))
+				
+		#Total Labels
+		st_total_fullname = wx.StaticText(panelE,wx.ID_ANY,"Total (w/o Liquidity):",(10,20))
+		st_total_amount = wx.StaticText(panelE,wx.ID_ANY,"",(217,20))
+		st_total_amount.SetLabelMarkup("<b><span>"+str("  {:.2f}".format(total))+" </span></b>")
+# 		st_total_placeholder = wx.StaticText(panelE,wx.ID_ANY,"",(250,80))
+		st_toal_amount_percentage = wx.StaticText(panelE,wx.ID_ANY,"",(217,40))
+		st_toal_amount_percentage.SetLabelMarkup("<span color='"+("red" if (total-total_inv)<0 else "#00cc00")+"'>"+("+" if (total-total_inv)>0 else "")+"{:.2f}".format(round(total-total_inv,2))+" ("+"{:.2f}".format(round((total-total_inv)*100/total_inv,2))+" %)"+"</span>")
+# 		fgs1.Add(st_total_fullname, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
+# 		fgs1.Add(st_total_amount, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
+# 		fgs1.Add(st_total_placeholder, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
+# 		fgs1.Add(st_toal_amount_percentage, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
+		panel_scrolled.SetSizer(fgs1)
+		panel_scrolled.SetAutoLayout(1)
+		panel_scrolled.SetupScrolling()
+		
+		hbox = wx.BoxSizer(wx.HORIZONTAL)
+		hbox.Add(panel_scrolled, 1, wx.FIXED_MINSIZE|wx.EXPAND)
+		panelD.SetSizer(hbox)
+		
+		bsizerDE = wx.BoxSizer(wx.VERTICAL)
+		bsizerDE.Add(panelD, 3, wx.FIXED_MINSIZE|wx.EXPAND)
+		bsizerDE.Add(panelE, 1, wx.EXPAND)
+		panelC.SetSizer(bsizerDE)
+		
 		bsizer1 = wx.BoxSizer(wx.VERTICAL)
-		bsizer1.Add(browser2, 2, wx.EXPAND)
+		bsizer1.Add(browser2, 1, wx.EXPAND)
 		bsizer1.Add(panelC, 1, wx.EXPAND)
 		panelB.SetSizer(bsizer1)
 
@@ -350,7 +398,7 @@ def plotOverviewGraphs():
 
 	layout = dict(
 				autosize=True,
-				margin=go.layout.Margin(l=0,r=0,b=0,t=0,pad=1),
+				margin=go.layout.Margin(l=0,r=0,b=30,t=0,pad=1),
 			)
 	trace = go.Pie(labels=pie_labels, values=pie_values, showlegend=False, marker=dict(colors=chart_colors),textinfo='percent')
 	fig = dict(data=[trace], layout=layout)
@@ -457,7 +505,7 @@ def plot():
 				)
 			layout = dict(
 				xaxis=dict(type='date'),
-				yaxis=dict(tickformat='.2%'),
+				yaxis=dict(tickformat='.0%'),
 				showlegend=False,
 				margin=go.layout.Margin(
 					l=40,

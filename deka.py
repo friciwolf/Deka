@@ -24,6 +24,7 @@ if __name__ == '__main__':
 		print("{:4} {:25} - {}".format("","--status, --state or -s","Shows data only in terminal"))
 		print("{:4} {:25} - {}".format("","--hist n", "Shows investement history of the past n (def: 10) days"))
 		print("{:4} {:25} - {}".format("","--cached, -c", "Uses cached data"))
+		print("{:4} {:25} - {}".format("","--no-graphs, -g", "Does not create graphs increasing startup time"))
 		print("{:4} {:25} - {}".format("","encrypt", "Encrypts the datafiles"))
 		print("{:4} {:25} - {}".format("","decrypt", "Decrypts the datafiles"))
 		print("{:4} {:25} - {}".format("","passwd", "Changes the password"))
@@ -64,11 +65,15 @@ if __name__ == '__main__':
 		if ("--cached" in args) or ("-c" in args):
 			globals.launchWithUpdate = False
 			print("Using cached data...")
+		if ("--no-graphs" in args) or ("-g" in args):
+			globals.createGraphsAtStartup = False
+		if globals.files_encrypted==False:
+			print("\033[97;41mWarning:\033[0m Dataset files are not encrypted")
 		globals.readIn_and_update_Data(globals.launchWithUpdate)
 		if not globals.mode_CLI:
 			globals.readInScopeAnalysisData(globals.launchWithUpdate)
 			import gui
-			gui.gui_make_plots()
+			if globals.createGraphsAtStartup: gui.gui_make_plots()
 			globals.print_if_allowed("Starting Application...")
 			if globals.launchWithUpdate==True:
 				gui.gui_main_loop("Online Mode" if len(globals.error_connection_deka_server)==0 else "Offline Mode")
