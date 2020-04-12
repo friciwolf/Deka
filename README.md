@@ -6,6 +6,17 @@ Primarily developed on MacOS X Catalina (10.15), tested on Linux Mint 18.2 Sonya
 
 Dependencies: plotly (used for the interactive plots), wxPython (for the GUI), the cryptography library (for the encryptions) all of which are available via pip.
 
+Under Ubuntu you might need to build wxpython yourself, for which its dependecies have to be installed first:
+```
+sudo apt-get install dpkg-dev build-essential python3.7-dev libpython3.7-dev freeglut3-dev libgl1-mesa-dev libglu1-mesa-dev libgstreamer-plugins-base1.0-dev libgtk-3-dev libjpeg-dev libnotify-dev libpng-dev libsdl2-dev libsm-dev libtiff-dev libwebkit2gtk-4.0-dev libxtst-dev
+```
+Then, one can execute
+```
+pip3 install wxpython
+```
+
+
+
 # Setup
 1. You will need to install [plotly](https://plot.ly/python/getting-started/) via:
 ```
