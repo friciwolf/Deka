@@ -14,7 +14,7 @@ Then, one can execute
 ```
 pip3 install wxpython
 ```
-
+which will build the library correctly unless a compatible wheel is found.
 
 
 # Setup
