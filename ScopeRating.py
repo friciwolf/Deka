@@ -30,9 +30,9 @@ def findSection(source,key_start,key_end):
 	return data
 
 class ScopeData:
-	def loadFromFile(self,path):
+	def loadFromFile(self,path,isin):
 		with open(path, 'r') as file:
-			self.url = ""
+			self.url = "https://funds.scopeanalysis.com/portal/en/common/public/fund/"+isin+"/en/home"
 			self.html = file.read()
 			key_begin = "jQuery(\"#perfAbsMonths\").kendoChart("
 			key_end = ");"

@@ -55,7 +55,7 @@ class MyFrame(wx.Frame):
 		fgs1.SetMinSize(230, 10)
 		
 		#Summary Label
-		st_summary = wx.StaticText(panel_scrolled,wx.ID_ANY, "Summary of assets:")
+		st_summary = wx.StaticText(panel_scrolled,wx.ID_ANY, "Summary of assets: ")
 		st_summary_placeholder = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
 		fgs1.Add(st_summary, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
 		fgs1.Add(st_summary_placeholder, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
@@ -67,16 +67,16 @@ class MyFrame(wx.Frame):
 				clr=""
 				if globals.wealth_amount[j][-1]-globals.invested[j]>0: clr="#00cc00"
 				else: clr="red"
-				st_fullname = wx.StaticText(panel_scrolled,wx.ID_ANY, fullname+" :")
+				st_fullname = wx.StaticText(panel_scrolled,wx.ID_ANY, fullname+" : ")
 				st_placeholder = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
 				st_amount = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
 				st_amount.SetLabelMarkup("<b><span color='"+str(globals.config[i]["color"])+"'>"+"  {:.2f}".format(globals.wealth_amount[j][-1])+" </span></b>")
 				try:
 					st_amount_percentage = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
-					st_amount_percentage.SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+" ("+"{:.2f}".format(round(((globals.wealth_amount[j][-1]-globals.invested[j])/globals.invested[j])*100,2))+" %)</span>")
+					st_amount_percentage.SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+" ("+"{:.2f}".format(round(((globals.wealth_amount[j][-1]-globals.invested[j])/globals.invested[j])*100,2))+" %) </span>")
 				except ZeroDivisionError:
 					st_amount_percentage = wx.StaticText(panel_scrolled,wx.ID_ANY, "")
-					st_amount_percentage.SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+"</span>")
+					st_amount_percentage.SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+" </span>")
 				total_inv += globals.invested[j]
 				total += globals.wealth_amount[j][-1]
 				fgs1.Add(st_fullname, flag=wx.ALIGN_LEFT|wx.ALIGN_CENTER_VERTICAL)
@@ -86,15 +86,15 @@ class MyFrame(wx.Frame):
 				fgs1.Add((0,2))
 				fgs1.Add((0,2))
 			if str(globals.config[i]["type"])=="liq":
-				st_fullname = wx.StaticText(panelE,wx.ID_ANY, fullname +" :", (10,0))
-				st_amount = wx.StaticText(panelE,wx.ID_ANY,"  {:.2f}".format(globals.liquidity[0]),(217,0))
+				st_fullname = wx.StaticText(panelE,wx.ID_ANY, fullname +" : ", (10,0))
+				st_amount = wx.StaticText(panelE,wx.ID_ANY,"  {:.2f} ".format(globals.liquidity[0]),(217,0))
 				
 		#Total Labels
-		st_total_fullname = wx.StaticText(panelE,wx.ID_ANY,"Total (w/o Liquidity):",(10,20))
+		st_total_fullname = wx.StaticText(panelE,wx.ID_ANY,"Total (w/o Liquidity): ",(10,20))
 		st_total_amount = wx.StaticText(panelE,wx.ID_ANY,"",(217,20))
 		st_total_amount.SetLabelMarkup("<b><span>"+"  {:.2f}".format(total)+" </span></b>")
 		st_toal_amount_percentage = wx.StaticText(panelE,wx.ID_ANY,"",(217,40))
-		st_toal_amount_percentage.SetLabelMarkup("<span color='"+("red" if (total-total_inv)<0 else "#00cc00")+"'>"+("+" if (total-total_inv)>0 else "")+"{:.2f}".format(round(total-total_inv,2))+" ("+"{:.2f}".format(round((total-total_inv)*100/total_inv,2))+" %)"+"</span>")
+		st_toal_amount_percentage.SetLabelMarkup("<span color='"+("red" if (total-total_inv)<0 else "#00cc00")+"'>"+("+" if (total-total_inv)>0 else "")+"{:.2f}".format(round(total-total_inv,2))+" ("+"{:.2f}".format(round((total-total_inv)*100/total_inv,2))+" %) </span>")
 		panel_scrolled.SetSizer(fgs1)
 		panel_scrolled.SetAutoLayout(1)
 		panel_scrolled.SetupScrolling()
@@ -165,12 +165,12 @@ class MyFrame(wx.Frame):
 				wx.StaticText(panelC,wx.ID_ANY,"{:.2f}".format(globals.wealth_amount[j][-1]),(250,115))
 				wx.StaticText(panelC,wx.ID_ANY,"Current Holding: ",(10,145))
 				wx.StaticText(panelC,wx.ID_ANY,str(round(globals.current_holding[j],3)),(250,145))
-				wx.StaticText(panelC,wx.ID_ANY,"",(10,165)).SetLabelMarkup("<span color='blue'>Reinvested dividends:</span>")
+				wx.StaticText(panelC,wx.ID_ANY,"",(10,165)).SetLabelMarkup("<span color='blue'>Reinvested dividends: </span>")
 				wx.StaticText(panelC,wx.ID_ANY,"{:.2f}".format(globals.dividends_invested[j]),(250,165))
-				wx.StaticText(panelC,wx.ID_ANY,"",(10,185)).SetLabelMarkup("<span color='red'>Transferred dividends:</span>")
+				wx.StaticText(panelC,wx.ID_ANY,"",(10,185)).SetLabelMarkup("<span color='red'>Transferred dividends: </span>")
 				wx.StaticText(panelC,wx.ID_ANY,str("{:.2f}".format(globals.dividends_transferred[j])),(250,185))
 				wx.StaticText(panelC,wx.ID_ANY,"Total gain/loss:",(10,205))
-				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,205)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+"</span>")
+				wx.StaticText(panelC,wx.ID_ANY,"",(250-5,205)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(globals.wealth_amount[j][-1]-globals.invested[j],2))+" </span>")
 				try:
 					wx.StaticText(panelC,wx.ID_ANY,"",(250-5,225)).SetLabelMarkup("<span color='"+str(clr)+"'>"+("+" if globals.wealth_amount[j][-1]-globals.invested[j]>0 else "")+"{:.2f}".format(round(((globals.wealth_amount[j][-1]-globals.invested[j])/globals.invested[j])*100,2))+" % </span>")
 				except ZeroDivisionError:

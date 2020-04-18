@@ -13,6 +13,7 @@ import datetime
 import encryption
 import ScopeRating
 
+
 #reading in the global settings:
 settings = configparser.ConfigParser()
 filepath = os.path.dirname(os.path.abspath(__file__))
@@ -23,10 +24,10 @@ config = configparser.ConfigParser()
 config.read(filepath+"/config.conf")
 
 #if patched fonts are used, set 1 in settings.conf; otherwise only standard Unicode characters will be displayed
-bash_terminal_font_patched = int(settings[str(settings.sections()[0])]["using_nerd_fonts"])
+bash_terminal_font_patched = int(settings["settings"]["using_nerd_fonts"])
 
 #Getting or Setting the salt:
-encryption_salt = str(settings[str(settings.sections()[0])]["encryption_salt"]) #getting the encryption salt
+encryption_salt = str(settings["settings"]["encryption_salt"]) #getting the encryption salt
 if encryption_salt == "":
 	encryption_salt = encryption.generateSalt()
 	settings["settings"]["encryption_salt"]=encryption_salt
@@ -36,7 +37,7 @@ else:
 encryption_salt = bytes(encryption_salt.encode())
 
 #Getting or Setting the secret message which is used to check the password provided by the user
-secret_message = str(settings[str(settings.sections()[0])]["secret_message"]) #getting the encryption salt
+secret_message = str(settings["settings"]["secret_message"]) #getting the encryption salt
 if secret_message == "":
 	secret_message = encryption.generateSecretMessage(encryption_salt)
 	settings["settings"]["secret_message"]=secret_message
@@ -44,7 +45,8 @@ secret_message = bytes(secret_message.encode())
 
 encryption.checkPassword(secret_message, encryption_salt)
 
-files_encrypted = bool(int(settings[str(settings.sections()[0])]["encrypted"])) #to check later on whether the csv files are encrypted; 1==yes, 0==no
+files_encrypted = bool(int(settings["settings"]["encrypted"])) #to check later on whether the csv files are encrypted; 1==yes, 0==no
+
 
 wealth_dates = []
 wealth_amount = []
@@ -363,7 +365,7 @@ def readIn_and_update_Data(update=True):
 				if k1>-1:
 					if dates_from_day_1[j]==date_b[k1]:
 						if ConvertToFloat(amount_b[k1])>=0:
-							pcs_at_t+=round(ConvertToFloat(amount_b[k1])*(float(y2[index])/float(y1[index])) /float(y2[index]),3)
+							pcs_at_t+=round(ConvertToFloat(amount_b[k1])*(float(y2[index])/float(y1[index]))/float(y2[index]),3)
 						else:
 							pcs_at_t+=round(ConvertToFloat(amount_b[k1])/float(y2[index]),3)
 						inv+=ConvertToFloat(amount_b[k1])
@@ -415,17 +417,22 @@ def readInScopeAnalysisData(update=True):
 		fullname = str(config[str(config.sections()[i])]["fullname"])
 		s = ScopeRating.ScopeData("")
 		if update:
-			try:
-				if str(config[str(config.sections()[i])]["type"])=="deka":
-					isin = str(config[str(config.sections()[i])]["isin"])
-					s = ScopeRating.ScopeData(isin)
-				filename = "csv/"+name+"/"+name+"_Scope.html"
-				file = open(filename,"w+")
-				file.write(s.html)
-				file.close()
-			except requests.exceptions.ConnectionError:
-				error_connection_scope_server.append(("\033[30;43mWarning:\033[0m Updating ScopeAnalysis database for "+fullname+" failed. Using cached data..."))
-				s.loadFromFile("csv/"+name+"/"+name+"_Scope.html")
+			for j in range(10): #Hit the server 10 times before giving up...
+				try:
+					if str(config[str(config.sections()[i])]["type"])=="deka":
+						isin = str(config[str(config.sections()[i])]["isin"])
+						s = ScopeRating.ScopeData(isin)
+					filename = "csv/"+name+"/"+name+"_Scope.html"
+					file = open(filename,"w+")
+					file.write(s.html)
+					file.close()
+					break
+				except requests.exceptions.ConnectionError:
+					if j == 9:
+						error_connection_scope_server.append(("\033[30;43mWarning:\033[0m Updating ScopeAnalysis database for "+fullname+" after 10 tries failed. Using cached data...")
+)
+						isin = str(config[str(config.sections()[i])]["isin"])
+						s.loadFromFile("csv/"+name+"/"+name+"_Scope.html",isin)
 		else:
 			if str(config[str(config.sections()[i])]["type"])=="deka":
 				s.isin = str(config[str(config.sections()[i])]["isin"])
