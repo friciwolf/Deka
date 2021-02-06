@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import sys
 
 import globals
@@ -5,6 +7,8 @@ import globals
 from encryption import decryptCSVs
 from encryption import encryptCSVs
 from encryption import changePassword
+
+from datetime import date
 
 if globals.bash_terminal_font_patched:
 	bash_mode_arrows = {"True":"\033[32m\uf55b\033[37m","False":"\033[31m\uf542\033[37m"} #up, down
@@ -81,7 +85,7 @@ if __name__ == '__main__':
 				gui.gui_main_loop("Data taken from stored cache")
 		else:
 			if globals.mode_only_state:
-				topbar = "{:35}: {:7} ({:7}) ({:>7}) [{:7}] {:8}".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.","Hist(5d)")
+				topbar = "{:35}: {:8} ({:7}) ({:>7}) [{:7}] {:8} |{:^11}".format("Product name", "Value", "Gain/Loss","Real G/L","C.Hold.","Hist(5d)","LastUpd")
 				print("="*(len(topbar)+1))
 				print(topbar)
 				print("-"*(len(topbar)+1))
@@ -112,15 +116,17 @@ if __name__ == '__main__':
 							history += " "+bash_mode_arrows_bold[str(globals.wealth_amount[i][-1]>globals.wealth_amount[i][-6])]
 						except IndexError:
 							pass
-						print(("{:35}: {:7.2f} ("+("\033[32m" if (globals.wealth_amount[i][-1]-globals.invested[i])>0 else "\033[31m")+"{:>7} %\033[37m) ("+("\033[32m" if (globals.wealth_amount[i][-1]-globals.invested[i])>0 else "\033[31m")+"{:>8}\033[37m) [{:>7.3f}] {:7}").format(fullname, wealth, diff_in_percent,diff,globals.current_holding[i],history))
-					if inv_type=="liq": print("{:35}: {:.2f}".format(fullname, globals.liquidity[0]))
+						lastUpdatedDate = globals.wealth_dates[i][-1] #Format: yyyy-mm-dd
+						lastUpdatedDate = date(int(lastUpdatedDate[:4]),int(lastUpdatedDate[5:7]),int(lastUpdatedDate[-2:]))
+						print(("{:35}: {:8.2f} ("+("\033[32m" if (globals.wealth_amount[i][-1]-globals.invested[i])>0 else "\033[31m")+"{:>7} %\033[37m) ("+("\033[32m" if (globals.wealth_amount[i][-1]-globals.invested[i])>0 else "\033[31m")+"{:>8}\033[37m) [{:>7.3f}] {:8}  |{:>11}").format(fullname, wealth, diff_in_percent,diff,globals.current_holding[i],history,globals.ConvertDateToGerman(lastUpdatedDate)))
+					if inv_type=="liq": print("{:35}: {:8.2f}".format(fullname, globals.liquidity[0]))
 				diff_in_tot = (total-total_inv)
 				diff_in_tot = ("+" if diff_in_tot>0 else "")+"{:.2f}".format(diff_in_tot)
 				history_tot = ""
 				for i in range(5):
 					history_tot = bash_mode_arrows[str(total_5dhistory[-1-i]>total_5dhistory[-2-i])]+history_tot
 				history_tot += " "+bash_mode_arrows_bold[str(total_5dhistory[-1]>total_5dhistory[-6])]
-				print(("{:35}: {:7.2f} ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>7.2f} %\033[0;37m) ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>8}\033[0;37m) {:9} {:7}").format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot,"",history_tot))
+				print(("{:35}: {:8.2f} ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>7.2f} %\033[0;37m) ("+("\033[1;32m" if (total-total_inv)>0 else "\033[1;31m")+"{:>8}\033[0;37m) {:9} {:7}").format("Total (w/o Liquidity)", total,100*(total-total_inv)/total_inv,diff_in_tot,"",history_tot))
 
 			if globals.mode_history_days>0:
 				nb_products = len(globals.wealth_amount)

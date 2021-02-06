@@ -31,26 +31,29 @@ def findSection(source,key_start,key_end):
 
 class ScopeData:
 	def loadFromFile(self,path,isin):
-		with open(path, 'r') as file:
-			self.url = "https://funds.scopeanalysis.com/portal/en/common/public/fund/"+isin+"/en/home"
-			self.html = file.read()
-			key_begin = "jQuery(\"#perfAbsMonths\").kendoChart("
-			key_end = ");"
-			data = findSection(self.html,key_begin,key_end)
-			d = json.loads(data)
-			self.dates = d["categoryAxis"][0]["categories"] #Structure: mm.yy
-			#Conversion to datetime
-			for i in range(len(self.dates)):
-				date = self.dates[i]
-				self.dates[i] = datetime(year=2000+int(date[-2:]),month=int(date[:2]),day=1)
-			self.peerPerformance = [] #Structure: 0th element: name; 1st: performance
-			for i in range(3):
-				a = []
-				a.append(cutString(d["series"][i]["tooltip"]["template"],"<br />"))
-				a.append(d["series"][i]["data"])
-				self.peerPerformance.append(a)
-			self.name = self.peerPerformance[0][0]
-			self.score,self.rating = self.getScoreAndRating(self.html)
+			try:
+				with open(path, 'r') as file:
+					self.url = "https://funds.scopeanalysis.com/portal/en/common/public/fund/"+isin+"/en/home"
+					self.html = file.read()
+					key_begin = "jQuery(\"#perfAbsMonths\").kendoChart("
+					key_end = ");"
+					data = findSection(self.html,key_begin,key_end)
+					d = json.loads(data)
+					self.dates = d["categoryAxis"][0]["categories"] #Structure: mm.yy
+					#Conversion to datetime
+					for i in range(len(self.dates)):
+						date = self.dates[i]
+						self.dates[i] = datetime(year=2000+int(date[-2:]),month=int(date[:2]),day=1)
+					self.peerPerformance = [] #Structure: 0th element: name; 1st: performance
+					for i in range(3):
+						a = []
+						a.append(cutString(d["series"][i]["tooltip"]["template"],"<br />"))
+						a.append(d["series"][i]["data"])
+						self.peerPerformance.append(a)
+					self.name = self.peerPerformance[0][0]
+					self.score,self.rating = self.getScoreAndRating(self.html)
+			except FileNotFoundError:
+				pass
 	
 	def getScoreAndRating(self,html):
 		score = -99

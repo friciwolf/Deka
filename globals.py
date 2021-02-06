@@ -405,6 +405,7 @@ def readIn_and_update_Data(update=True):
 			for item in info:
 				print_if_allowed(item)
 
+#This function does not work since the new Scope design!
 def readInScopeAnalysisData(update=True):
 	if printing_allowed==True or mode_CLI==True:
 		percent = float(0) / len(config.sections())
@@ -418,6 +419,7 @@ def readInScopeAnalysisData(update=True):
 		s = ScopeRating.ScopeData("")
 		if update:
 			for j in range(10): #Hit the server 10 times before giving up...
+				continue # Doesn't work anymore!
 				try:
 					if str(config[str(config.sections()[i])]["type"])=="deka":
 						isin = str(config[str(config.sections()[i])]["isin"])
@@ -436,7 +438,7 @@ def readInScopeAnalysisData(update=True):
 		else:
 			if str(config[str(config.sections()[i])]["type"])=="deka":
 				s.isin = str(config[str(config.sections()[i])]["isin"])
-				s.loadFromFile("csv/"+name+"/"+name+"_Scope.html")
+				#s.loadFromFile("csv/"+name+"/"+name+"_Scope.html")
 		scopeAnalysisData.append(s)
 		#updating the status bar...
 		if printing_allowed==True or mode_CLI==True:

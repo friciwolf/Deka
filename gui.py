@@ -17,6 +17,7 @@ import globals
 class MyFrame(wx.Frame):
 	def __init__(self, parent, title):
 		wx.Frame.__init__(self, parent, title=title, size=(1100,600))
+		wx.Log.SetActiveTarget(wx.LogStderr())
 		self.CenterOnScreen()
 		self.CreateStatusBar()
 #		self.SetStatusText("This is the statusbar")
@@ -164,7 +165,7 @@ class MyFrame(wx.Frame):
 				wx.StaticText(panelC,wx.ID_ANY,"Value of the Invested Amount\n(w reinvested dividends): ",(10,110))
 				wx.StaticText(panelC,wx.ID_ANY,"{:.2f}".format(globals.wealth_amount[j][-1]),(250,115))
 				wx.StaticText(panelC,wx.ID_ANY,"Current Holding: ",(10,145))
-				wx.StaticText(panelC,wx.ID_ANY,str(round(globals.current_holding[j],3)),(250,145))
+				wx.StaticText(panelC,wx.ID_ANY,str(round(globals.current_holding[j],3))+" ",(250,145))
 				wx.StaticText(panelC,wx.ID_ANY,"",(10,165)).SetLabelMarkup("<span color='blue'>Reinvested dividends: </span>")
 				wx.StaticText(panelC,wx.ID_ANY,"{:.2f}".format(globals.dividends_invested[j]),(250,165))
 				wx.StaticText(panelC,wx.ID_ANY,"",(10,185)).SetLabelMarkup("<span color='red'>Transferred dividends: </span>")
@@ -267,17 +268,18 @@ class MyFrame(wx.Frame):
 				boxsizerFa = wx.BoxSizer(wx.VERTICAL)
 				panelFa.SetSizer(boxsizerFa)
 				
-				panelFb = wx.Window(panelF,wx.ID_ANY)
-				browser3 = wx.html2.WebView.New(panelFb,pos=(0,10))
-				browser3.LoadURL("file://"+globals.filepath+"/html/"+name+"/"+name+"_Scope.html")
+				#panelFb = wx.Window(panelF,wx.ID_ANY)
+				#browser3 = wx.html2.WebView.New(panelFb,pos=(0,10))
+				#browser3.LoadURL("file://"+globals.filepath+"/html/"+name+"/"+name+"_Scope.html")
+				#browser3.LoadURL("file://"+globals.filepath+"/html/"+"overview1.html")
 				
-				boxsizerFb = wx.BoxSizer(wx.VERTICAL)
-				boxsizerFb.Add(browser3,1,wx.EXPAND)
-				panelFb.SetSizer(boxsizerFb)
+				#boxsizerFb = wx.BoxSizer(wx.VERTICAL)
+				#boxsizerFb.Add(browser3,1,wx.EXPAND)
+				#panelFb.SetSizer(boxsizerFb)
 				
 				boxsizerF = wx.BoxSizer(wx.VERTICAL)
 				boxsizerF.Add(panelFa, 1, wx.EXPAND)
-				boxsizerF.Add(panelFb, 2, wx.EXPAND|wx.ALIGN_BOTTOM)
+				#boxsizerF.Add(panelFb, 2, wx.EXPAND|wx.ALIGN_BOTTOM)
 				panelF.SetSizer(boxsizerF)
 
 			boxsizerD = wx.BoxSizer(wx.VERTICAL)
@@ -507,7 +509,10 @@ def plot():
 				)
 			)
 			fig = dict(data=ScopeData,layout=layout)
-			plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_Scope.html"),auto_open=False,config={'displayModeBar': False})
+			try:
+				plotly.offline.plot(fig,filename=("html/"+name+"/"+name+"_Scope.html"),auto_open=False,config={'displayModeBar': False})
+			except:
+				pass
 
 		else:
 			x,y = globals.parseLiqudityData(name, AsDate=True, AsFloat=True)
