@@ -319,9 +319,11 @@ def parseDekaData(i, name, update=False):
 	return x,y1,y2
 
 def unifyData():
-	dates_unified, amount_unified = [],[]
+	dates_unified, amount_unified, inv_unified = [],[],[]
 	for i in range(len(wealth_amount)):
 		amount_unified.append([])
+		if str(config[str(config.sections()[i])]["type"])=="deka": # ignore liquidity datasets
+			inv_unified.append([])
 	for i in range(len(wealth_dates)):
 		for dates in wealth_dates[i]:
 			if dates not in dates_unified:
@@ -335,10 +337,17 @@ def unifyData():
 			if dates in wealth_dates[i]:
 				index = wealth_dates[i].index(dates)
 				amount_unified[i].append(wealth_amount[i][index])
+				if str(config[str(config.sections()[i])]["type"])=="deka": # ignore liquidity datasets
+					inv_unified[i].append(invested_all[i][index])
 			else:
-				if len(amount_unified[i])==0: amount_unified[i].append(0.0)
-				else: amount_unified[i].append(amount_unified[i][-1])
-	return dates_unified, amount_unified
+				if len(amount_unified[i])==0:
+					amount_unified[i].append(0.0)
+					inv_unified[i].append(0.0)
+				else:
+					amount_unified[i].append(amount_unified[i][-1])
+					if str(config[str(config.sections()[i])]["type"])=="deka": # ignore liquidity datasets
+						inv_unified[i].append(inv_unified[i][-1])
+	return dates_unified, amount_unified, inv_unified
 
 def readIn_and_update_Data(update=True):
 	if printing_allowed==True or mode_CLI==True:

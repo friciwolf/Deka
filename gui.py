@@ -39,7 +39,7 @@ class MyFrame(wx.Frame):
 		panelA = wx.Window(Tabs, wx.ID_ANY)
 		Tabs.AddPage(panelA,"Overview")
 		browser = wx.html2.WebView.New(panelA)
-		browser.LoadURL("file://"+globals.filepath+"/html/"+"overview1.html")
+		browser.LoadURL("file://"+globals.filepath+"/overview_frame.html")
 
 		panelB = wx.Window(panelA, wx.ID_ANY)
 		browser2 = wx.html2.WebView.New(panelB)
@@ -366,7 +366,9 @@ class MyFrame(wx.Frame):
 
 def plotOverviewGraphs():
 	globals.print_if_allowed("Making Summary plots...")
-	(dates_unified, amount_unified) = globals.unifyData()
+	
+	# Variable initialization
+	(dates_unified, amount_unified, inv_unified) = globals.unifyData()
 	data = []
 	stack_levels = []
 	pie_values = []
@@ -374,6 +376,8 @@ def plotOverviewGraphs():
 	chart_colors = []
 	for i in range(len(globals.config.sections())):
 		stack_levels.append(int(globals.config[str(globals.config.sections()[i])]["stack"]))
+	
+	# Plotting cumulative gains
 	for i in range(len(stack_levels)):
 		if i==0: continue #liquidity
 		index = stack_levels.index(i)
@@ -385,10 +389,11 @@ def plotOverviewGraphs():
 		pie_labels.append(name)
 		pie_values.append(amount_unified[index][-1])
 
-	layout = dict(title="Overview of total assets")
+	layout = dict(title="Overview of all assets")
 	fig = dict(data=data,layout=layout)
 	if not globals.mode_only_state: plotly.offline.plot(fig, filename="html/overview1.html", auto_open=False)
-
+	
+	# Plotting portfolio composition pie chart
 	layout = dict(
 				autosize=True,
 				margin=go.layout.Margin(l=0,r=0,b=30,t=0,pad=1),
@@ -396,6 +401,42 @@ def plotOverviewGraphs():
 	trace = go.Pie(labels=pie_labels, values=pie_values, showlegend=False, marker=dict(colors=chart_colors),textinfo='percent')
 	fig = dict(data=[trace], layout=layout)
 	if not globals.mode_only_state: plotly.offline.plot(fig,filename="html/overview2.html", auto_open=False)
+	
+	# Plotting absolute gains
+	gains = np.sum(np.array(amount_unified[:-1]),axis=0)-np.sum(np.array(inv_unified),axis=0)
+	trace = go.Scatter(x=dates_unified,y=gains)
+	layout = dict(title="Overview of all time absolute gains",
+			   xaxis=dict(rangeslider=dict(visible = True),type='date'),
+			   yaxis = dict(zeroline=True, zerolinewidth=2, zerolinecolor='LightPink')
+			   )
+	fig = dict(data=trace,layout=layout)
+	if not globals.mode_only_state: plotly.offline.plot(fig, filename="html/overview_abs_gains.html", auto_open=False)
+	
+	# Plotting relative gains
+	gains_rel = 100*(np.sum(np.array(amount_unified[:-1]),axis=0)-np.sum(np.array(inv_unified),axis=0))/np.sum(np.array(inv_unified),axis=0)
+	trace = go.Scatter(x=dates_unified,y=gains_rel)
+	layout = dict(title="Overview of all time relative gains",
+			   xaxis=dict(rangeslider=dict(visible = True),type='date'),
+			   yaxis = dict(zeroline=True, zerolinewidth=2, zerolinecolor='LightPink')
+			   )
+	fig = dict(data=trace,layout=layout)
+	if not globals.mode_only_state: plotly.offline.plot(fig, filename="html/overview_rel_gains.html", auto_open=False)
+	
+	# Plotting composition history
+	data = []
+	chart_colors = []
+	for i in range(len(stack_levels)):
+		if i==0: continue #liquidity
+		index = stack_levels.index(i)
+		name = str(globals.config[str(globals.config.sections()[index])]["name"])
+		chart_colors.append(str(globals.config[str(globals.config.sections()[index])]["color"]))
+		trace = go.Scatter(x=dates_unified,y=100*np.array(amount_unified[index])/np.sum(np.array(amount_unified[:-1]),axis=0),fill='tonexty',stackgroup='one', name=name,line=dict(color=chart_colors[-1]))
+		data.append(trace)
+
+	layout = dict(title="Relative Composition History",yaxis=dict(range=[0, 100]))
+	fig = dict(data=data,layout=layout)
+	if not globals.mode_only_state: plotly.offline.plot(fig, filename="html/overview_comp_history.html", auto_open=False)
+	
 
 def plot():
 	globals.print_if_allowed("Making",len(globals.config.sections()),"plots...")
