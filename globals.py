@@ -286,6 +286,11 @@ def parseLiqudityData(name,AsDate=False, AsFloat=False):
 				else: amount_b.append(str(row['Amount']))
 	return date_b,amount_b
 
+def backupDekaData():
+	if(os.path.isdir(os.path.dirname(os.path.abspath(__file__))+"/csv/"))==False:
+		return
+	shutil.make_archive(os.path.dirname(os.path.abspath(__file__))+"/csv_bckup","zip",os.path.dirname(os.path.abspath(__file__))+"/csv")
+
 def updateDekaData(i, name):
 	ISIN = str(config[str(config.sections()[i])]["isin"])
 	fullname = str(config[str(config.sections()[i])]["fullname"])
@@ -305,7 +310,8 @@ def updateDekaData(i, name):
 
 def parseDekaData(i, name, update=False):
 	x,y1,y2 = [],[],[]
-	if update: updateDekaData(i, name)
+	if update:
+		updateDekaData(i, name)
 	filename = "csv/"+name+"/"+name+".csv"
 	with open(filename) as csvfile:
 		reader = csv.DictReader(csvfile, delimiter=";")
@@ -315,6 +321,10 @@ def parseDekaData(i, name, update=False):
 				y1.append(ConvertToFloat(row['Ausgabepreis']))
 				y2.append(ConvertToFloat(row['Anteilpreis']))
 		except KeyError:
+			if update==False:
+				print("\n \033[97;41mError:\033[0m Local csv datafiles currupted. Try restoring backed up data or updating. Please visit deka.de to find out, if the Deka server's working properly; corrupt dataset files could have been created due to server maintenance.")
+				print("Exiting...")
+				exit()
 			return parseDekaData(i,name, True) #This means the Deka server has returned nonsense... Hit it again
 	return x,y1,y2
 
@@ -350,6 +360,10 @@ def unifyData():
 	return dates_unified, amount_unified, inv_unified
 
 def readIn_and_update_Data(update=True):
+	if update:
+		print_if_allowed("Backing up previous data...")
+		backupDekaData()
+		print_if_allowed("Backed up.")
 	if printing_allowed==True or mode_CLI==True:
 		percent = float(0) / len(config.sections())
 		arrow = '-' * int(round(percent * 50)-1) + '>'
